@@ -43,8 +43,8 @@ class RegisteredUserAPIController extends Controller
             event(new Registered($user));
 
             Auth::login($user);
+            return response()->json(['message' => 'User Registered successfully', 'users' => $user], 200);
 
-            return response()->json('User Registered'); // Return a response indicating success (204 No Content)
         } catch (ValidationException $e) {
            // dd($e);
             return response()->json(['message' => 'Validation failed', 'errors' => $e->errors()], 422);
@@ -55,12 +55,12 @@ class RegisteredUserAPIController extends Controller
         }
     }
 
-    public function data(Request $request): Response
+    public function getUsers(Request $request): JsonResponse
     {
-        dd($request);
-        //Log the request data
-       Log::debug('Request Data:', $request->all());
+        // Fetch all users
+        $allUsers = User::all();
 
-        return response("testing");
+        // Return users in JSON format
+        return response()->json(['message' => 'Users retrieved successfully', 'users' => $allUsers], 200);
     }
 }

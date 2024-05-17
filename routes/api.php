@@ -9,10 +9,11 @@ Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
     return $request->user();
 });
 
-Route::get('/test', function (Request $request) {
-    return response()->json(['message' => 'This is a test route', 'user' => $request->user()]);
-});
 
-Route::post('/testreg', [RegisteredUserAPIController::class, 'store'])
+Route::get('/users', [RegisteredUserAPIController::class, 'getUsers'])
                 ->middleware('guest')
-                ->name('testreg');
+                ->name('users');
+
+Route::post('/register', [RegisteredUserAPIController::class, 'store'])
+                ->middleware('guest')
+                ->name('register');
