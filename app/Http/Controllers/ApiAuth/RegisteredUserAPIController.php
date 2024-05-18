@@ -31,12 +31,14 @@ class RegisteredUserAPIController extends Controller
             $validatedData = $request->validate([
                 'name' => ['required', 'string', 'max:255'],
                 'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
+                'surname' => ['required', 'string', 'max:255'],
                 'password' => ['required', 'confirmed', Password::defaults()],
             ]);
 
             $user = User::create([
                 'name' => $validatedData['name'],
                 'email' => $validatedData['email'],
+                'surname' => $validatedData['surname'],
                 'password' => Hash::make($validatedData['password']),
             ]);
 
@@ -57,10 +59,29 @@ class RegisteredUserAPIController extends Controller
 
     public function getUsers(Request $request): JsonResponse
     {
+
+      //  dd($request);
         // Fetch all users
         $allUsers = User::all();
 
         // Return users in JSON format
         return response()->json(['message' => 'Users retrieved successfully', 'users' => $allUsers], 200);
     }
+
+    public function deleteAllUsers(Request $request): JsonResponse
+    {dd($request);
+        // Delete all users
+        User::truncate();
+
+        // Return a response
+        return response()->json(['message' => 'All users have been deleted.'], 200);
+    }
+
+    public function test(Request $request): JsonResponse
+    {
+
+        // Return users in JSON format
+        return response()->json(['message' => 'Users retrieved successfully', 'users'], 200);
+    }
 }
+

@@ -18,6 +18,8 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'verified' => \App\Http\Middleware\EnsureEmailIsVerified::class,
+            'token.present' => \App\Http\Middleware\EnsureTokenIsPresent::class,
+            'token.valid' => \App\Http\Middleware\EnsureTokenIsValid::class,
         ]);
 
         //
