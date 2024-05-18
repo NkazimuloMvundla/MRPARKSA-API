@@ -9,25 +9,28 @@ use App\Http\Controllers\Auth\EmailVerificationNotificationController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\VerifyEmailController;
-
+use App\Http\Controllers\ParkingController;
 // Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
 //     return $request->user();
 // });
 
 
 Route::get('/users', [RegisteredUserAPIController::class, 'getUsers'])
-->middleware('guest')
+                ->middleware('guest')
                 ->name('getUsers');
 
 Route::post('/register', [RegisteredUserAPIController::class, 'store'])
                 ->middleware('guest')
                 ->name('register');
 
+// Route::post('/search-parking', [RegisteredUserAPIController::class, 'store'])
+// ->middleware('guest')
+// ->name('search-parking');
+
 //THIS IS FOR TESTING PERPUSES COMMENT OUT WHEN DONE
 Route::post('/deleteAllUsers', [RegisteredUserAPIController::class, 'deleteAllUsers'])
     ->middleware(['token.present', 'token.valid', 'auth:sanctum'])
     ->name('deleteAllUsers');
-
 
 Route::middleware('guest')->post('/login', [AuthenticatedSessionController::class, 'store'])
     ->name('login');
@@ -38,4 +41,7 @@ Route::middleware('guest')->post('/login', [AuthenticatedSessionController::clas
 //     return ['token' => $token->plainTextToken];
 // });
 
-// Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('login');
+//parking routes
+Route::post('/find-parking', [ParkingController::class, 'findParking']);
+Route::post('/make-reservation', [ParkingController::class, 'makeReservation'])->middleware('auth:sanctum');
+Route::post('/create-parking-space', [ParkingController::class, 'createParkingSpace'])->middleware('auth:sanctum');
