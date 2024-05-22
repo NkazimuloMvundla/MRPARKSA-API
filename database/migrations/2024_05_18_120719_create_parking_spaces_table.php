@@ -9,13 +9,13 @@ class CreateParkingSpacesTable extends Migration
     {
         Schema::create('parking_spaces', function (Blueprint $table) {
             $table->id();
-            $table->string('type'); // hourly, monthly, airport
+            // $table->string('type'); // hourly, monthly, airport
             $table->decimal('latitude', 10, 7);
             $table->decimal('longitude', 10, 7);
             $table->string('address')->nullable();
             $table->text('description')->nullable();
-            $table->decimal('base_price_hourly', 8, 2)->after('longitude');
-            $table->decimal('base_price_monthly', 8, 2)->after('base_price_hourly');
+            // $table->decimal('base_price_hourly', 8, 2)->after('longitude');
+            // $table->decimal('base_price_monthly', 8, 2)->after('base_price_hourly');
             $table->integer('capacity')->default(1);
             $table->string('contact_info')->nullable();
             $table->json('amenities')->nullable();
