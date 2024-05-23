@@ -42,6 +42,6 @@ Route::middleware('guest')->post('/login', [AuthenticatedSessionController::clas
 // });
 
 //parking routes
-Route::post('/find-parking', [ParkingController::class, 'findParking']);
+Route::get('/find-parking', [ParkingController::class, 'findParking']);
 Route::post('/make-reservation', [ParkingController::class, 'makeReservation'])->middleware('auth:sanctum');
 Route::post('/create-parking-space', [ParkingController::class, 'createParkingSpace'])->middleware('auth:sanctum');

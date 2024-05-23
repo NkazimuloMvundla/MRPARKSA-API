@@ -12,6 +12,9 @@ use App\Models\ParkingSpaceType;
 use App\Models\ParkingType;
 use App\Models\ParkingSpacePrice;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException; // Import ValidationException
+use Illuminate\Validation\Rules\Password;
+use Illuminate\Http\JsonResponse; // Ensure this import is presen
 
 class ParkingController extends Controller
 {
@@ -48,8 +51,8 @@ class ParkingController extends Controller
             }
         }
 
-         // Attach types to the parking space
-         foreach ($validator['types'] as $typeId) {
+        // Attach types to the parking space
+        foreach ($validator['types'] as $typeId) {
             ParkingSpaceType::create([
                 'parking_space_id' => $parkingSpace->id,
                 'parking_type_id' => $typeId,
@@ -67,67 +70,79 @@ class ParkingController extends Controller
         return response()->json($parkingSpace, 201);
     }
 
-    public function findNearbyParking(Request $request)
+    public function findParking(Request $request)
     {
-        // Validate the incoming request
-        $validated = $request->validate([
-            'type' => ['required', 'string', 'max:255'], // hourly, monthly, or airport
-            'latitude' => 'required|numeric', // e.g., 37.7749
-            'longitude' => 'required|numeric', // e.g., -122.4194
-            'start_time' => 'required|date', // e.g., 2024-02-03 10:00:00
-            'end_time' => 'required|date|after:start_time', // e.g., 2024-02-03 12:00:00
-        ]);
+        try {
+            // Validate the incoming request
+            $validated = $request->validate([
+                'type' => ['required', 'numeric', 'max:255'], // hourly, monthly, or airport
+                'latitude' => 'required|numeric', // e.g., 37.7749
+                'longitude' => 'required|numeric', // e.g., -122.4194
+                'start_time' => 'required|string', // e.g., 2024-02-03 10:00:00
+                'end_time' => 'required|string|after:start_time', // e.g., 2024-02-03 12:00:00
+            ]);
 
-        // Define the radius (in kilometers) for the search
-        $radius = 5;
+            // Define the radius (in kilometers) for the search
+            $radius = 5;
 
-        // Retrieve the necessary data from the validated input
-        $type = $validated['type'];
-        $latitude = $validated['latitude'];
-        $longitude = $validated['longitude'];
-        $start_time = $validated['start_time'];
-        $end_time = $validated['end_time'];
+            // Retrieve the necessary data from the validated input
+            $type = $validated['type'];
+            $latitude = $validated['latitude'];
+            $longitude = $validated['longitude'];
+            $start_time = $validated['start_time'];
+            $end_time = $validated['end_time'];
 
-        // Calculate the bounding box for the query
-        $boundingBox = $this->calculateBoundingBox($latitude, $longitude, $radius);
+            // Calculate the bounding box for the query
+            $boundingBox = $this->calculateBoundingBox($latitude, $longitude, $radius);
+            //dd($boundingBox);
+            $nearbyParkingSpaces = ParkingSpace::selectRaw("
+            *,
+            (6371 * acos(
+                cos(radians($latitude)) *
+                cos(radians(latitude)) *
+                cos(radians(longitude) - radians($longitude)) +
+                sin(radians($latitude)) *
+                sin(radians(latitude))
+            )) AS distance")
+                ->having('distance', '<', $radius)
+                ->whereBetween('latitude', [$boundingBox['min_lat'], $boundingBox['max_lat']])
+                ->whereBetween('longitude', [$boundingBox['min_lng'], $boundingBox['max_lng']])
+                ->whereHas('types', function ($query) use ($type) {
+                    $query->where('parking_space_types.parking_type_id', $type);  // Assuming 'parking_types' is the alias for your parking types table
+                })
+                ->whereDoesntHave('reservations', function ($query) use ($start_time, $end_time) {
+                    $query->where(function ($query) use ($start_time, $end_time) {
+                        $query->whereBetween('start_time', [$start_time, $end_time])
+                            ->orWhereBetween('end_time', [$start_time, $end_time]);
+                    });
+                })
+                ->get();
 
-        // Query to find nearby parking spaces within the calculated bounding box
-        $nearbyParkingSpaces = ParkingSpace::select(
-                DB::raw("*,
-                    (6371 * acos(
-                        cos(radians(?)) *
-                        cos(radians(latitude)) *
-                        cos(radians(longitude) - radians(?)) +
-                        sin(radians(?)) *
-                        sin(radians(latitude))
-                    )) AS distance", [$latitude, $longitude, $latitude])
-            )
-            ->having('distance', '<', $radius)
-            ->whereBetween('latitude', [$boundingBox['min_lat'], $boundingBox['max_lat']])
-            ->whereBetween('longitude', [$boundingBox['min_lng'], $boundingBox['max_lng']])
-            ->whereHas('types', function($query) use ($type) {
-                $query->where('name', $type);
-            })
-            ->whereDoesntHave('reservations', function($query) use ($start_time, $end_time) {
-                $query->where(function($query) use ($start_time, $end_time) {
-                    $query->whereBetween('start_time', [$start_time, $end_time])
-                          ->orWhereBetween('end_time', [$start_time, $end_time]);
-                });
-            })
-            ->get();
-
-        return response()->json($nearbyParkingSpaces);
+            // Return the result as JSON response
+            return response()->json($nearbyParkingSpaces);
+        } catch (ValidationException $e) {
+            // Return validation error response
+            return response()->json(['message' => 'Validation failed', 'errors' => $e->errors()], 422);
+        } catch (\Exception $e) {
+            // Handle other exceptions and return an appropriate response
+            return response()->json(['message' => 'Server error', 'error' => $e->getMessage()], 500);
+        }
     }
+
 
     private function calculateBoundingBox($latitude, $longitude, $radius)
     {
         $earthRadius = 6371; // Earth radius in kilometers
 
+        // Calculate latitude boundaries
         $maxLat = $latitude + rad2deg($radius / $earthRadius);
         $minLat = $latitude - rad2deg($radius / $earthRadius);
+
+        // Calculate longitude boundaries
         $maxLng = $longitude + rad2deg($radius / $earthRadius / cos(deg2rad($latitude)));
         $minLng = $longitude - rad2deg($radius / $earthRadius / cos(deg2rad($latitude)));
 
+        // Ensure correct ordering for latitude and longitude boundaries
         return [
             'min_lat' => $minLat,
             'max_lat' => $maxLat,
@@ -135,6 +150,7 @@ class ParkingController extends Controller
             'max_lng' => $maxLng,
         ];
     }
+
 
     public function makeReservation(Request $request)
     {

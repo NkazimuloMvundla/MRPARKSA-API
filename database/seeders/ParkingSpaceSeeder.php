@@ -20,24 +20,55 @@ class ParkingSpaceSeeder extends Seeder
 
         // Create parking spaces with their respective relationships
         $parkingSpaces = [
+            // [
+            //     'latitude' => -29.8587,
+            //     'longitude' => 31.0218,
+            //     'address' => '123 Beach Rd, Durban, South Africa',
+            //     'description' => 'Secure parking space near the beach',
+            //     'capacity' => 50,
+            //     'contact_info' => 'contact@example.com',
+            //     'amenities' => ['CCTV', '24/7 Access'],
+            //     'images' => [
+            //         'data:image/jpeg;base64,' . base64_encode(file_get_contents(public_path('images/park1.jpg'))),
+            //         'data:image/jpeg;base64,' . base64_encode(file_get_contents(public_path('images/park2.jpg'))),
+            //     ],
+            //     'types' => [
+            //         ['type_id' => $hourly->id, 'price' => 5.00],
+            //         ['type_id' => $monthly->id, 'price' => 150.00],
+            //     ],
+            // ],
+            // Add more parking spaces as needed
+            // [
+            //     'latitude' => -29.8637, // Approximately 5km away
+            //     'longitude' => 31.0268, // Approximately 5km away
+            //     'address' => '456 City Center Rd, Durban, South Africa',
+            //     'description' => 'Parking space in the city center',
+            //     'capacity' => 30,
+            //     'contact_info' => 'citycenter@example.com',
+            //     'amenities' => ['Gated', 'Security Guard'],
+            //     'images' => [
+            //         'data:image/jpeg;base64,' . base64_encode(file_get_contents(public_path('images/park3.webp'))),
+            //         'data:image/jpeg;base64,' . base64_encode(file_get_contents(public_path('images/park4.webp'))),
+            //     ],
+            //     'types' => [
+            //         ['type_id' => $airport->id, 'price' => 100.00],
+            //     ],
+            // ],
             [
-                'latitude' => -29.8587,
-                'longitude' => 31.0218,
-                'address' => '123 Beach Rd, Durban, South Africa',
-                'description' => 'Secure parking space near the beach',
-                'capacity' => 50,
+                'latitude' => -29.8000, // Adjust the latitude to be over 5km away
+                'longitude' => 31.1000, // Adjust the longitude to be over 5km away
+                'address' => '789 Park Ave, Durban, South Africa',
+                'description' => 'Remote parking space away from city center',
+                'capacity' => 20,
                 'contact_info' => 'contact@example.com',
-                'amenities' => ['CCTV', '24/7 Access'],
+                'amenities' => ['Remote Location', 'Easy Access'],
                 'images' => [
-                    'data:image/jpeg;base64,' . base64_encode(file_get_contents(public_path('images/park1.jpg'))),
-                    'data:image/jpeg;base64,' . base64_encode(file_get_contents(public_path('images/park2.jpg'))),
+                    'data:image/jpeg;base64,' . base64_encode(file_get_contents(public_path('images/park4.webp'))),
                 ],
                 'types' => [
-                    ['type_id' => $hourly->id, 'price' => 5.00],
-                    ['type_id' => $monthly->id, 'price' => 150.00],
+                    ['type_id' => $hourly->id, 'price' => 6.00],
                 ],
             ],
-            // Add more parking spaces as needed
         ];
 
         foreach ($parkingSpaces as $data) {
@@ -49,7 +80,7 @@ class ParkingSpaceSeeder extends Seeder
                 'capacity' => $data['capacity'],
                 'contact_info' => $data['contact_info'],
                 'amenities' => json_encode($data['amenities']),
-                'rating' => '2.0'
+                'rating' => '5.0'
             ]);
 
             // Save images
