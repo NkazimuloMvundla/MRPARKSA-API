@@ -9,7 +9,9 @@ use App\Http\Controllers\Auth\EmailVerificationNotificationController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\VerifyEmailController;
+use App\Http\Controllers\ReservationController;
 use App\Http\Controllers\ParkingController;
+use App\Http\Controllers\ReviewController;
 // Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
 //     return $request->user();
 // });
@@ -35,13 +37,30 @@ Route::post('/deleteAllUsers', [RegisteredUserAPIController::class, 'deleteAllUs
 Route::middleware('guest')->post('/login', [AuthenticatedSessionController::class, 'store'])
     ->name('login');
 
+
+//user-parking-routes
+
+Route::get('/find-parking', [ParkingController::class, 'findParking']);
+Route::get('/parking-space/{id}', [ParkingController::class, 'getParkingSpace']);
+Route::get('/parking-types', [ParkingController::class, 'listParkingTypes']);
+
+//reservation
+Route::get('/user-reservations', [ReservationController::class, 'listUserReservations'])->middleware('auth:sanctum');
+Route::delete('/cancel-reservation/{id}', [ReservationController::class, 'cancelReservation'])->middleware('auth:sanctum');
+Route::post('/make-reservation', [ParkingController::class, 'makeReservation']); //->middleware('auth:sanctum');
+
+//reviews
+Route::get('/parking-space/{id}/reviews', [ReviewController::class, 'listReviews']);
+Route::get('/user-reviews', [ReviewController::class, 'listUserReviews'])->middleware('auth:sanctum');
+Route::post('/submit-review', [ParkingController::class, 'submitReview']);
+
+//ADMIN-parking-routes
+Route::post('/create-parking-space', [ParkingController::class, 'createParkingSpace'])->middleware('auth:sanctum');
+Route::put('/parking-space/{id}', [ParkingController::class, 'updateParkingSpace'])->middleware('auth:sanctum');
+Route::delete('/parking-space/{id}', [ParkingController::class, 'deleteParkingSpace'])->middleware('auth:sanctum');
+
 // Route::post('/tokens/create', function (Request $request) {
 //     $token = $request->user()->createToken($request->token_name);
 
 //     return ['token' => $token->plainTextToken];
 // });
-
-//parking routes
-Route::get('/find-parking', [ParkingController::class, 'findParking']);
-Route::post('/make-reservation', [ParkingController::class, 'makeReservation'])->middleware('auth:sanctum');
-Route::post('/create-parking-space', [ParkingController::class, 'createParkingSpace'])->middleware('auth:sanctum');

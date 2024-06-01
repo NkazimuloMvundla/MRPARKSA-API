@@ -15,11 +15,17 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException; // Import ValidationException
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Http\JsonResponse; // Ensure this import is presen
+use App\Models\Review;
+use App\Models\ReviewAspect;
+use App\Models\ReviewAspectRating;
+use App\Models\User;
 
 class ParkingController extends Controller
 {
     public function createParkingSpace(Request $request)
     {
+        dd($request);
+
         $validator = Validator::make($request->all(), [
             'latitude' => 'required|numeric',
             'longitude' => 'required|numeric',
@@ -152,30 +158,52 @@ class ParkingController extends Controller
     }
 
 
-    public function makeReservation(Request $request)
-    {
-        $validated = $request->validate([
-            'parking_space_id' => 'required|exists:parking_spaces,id',
-            'parking_type_id' => 'required|exists:parking_types,id',
-            'start_time' => 'required|date',
-            'end_time' => 'required|date|after:start_time',
-            'price' => 'required|numeric',
-        ]);
-
-        $reservation = Reservation::create([
-            'user_id' => Auth::id(),
-            'parking_space_id' => $validated['parking_space_id'],
-            'start_time' => $validated['start_time'],
-            'end_time' => $validated['end_time'],
-            'price' => $validated['price'],
-        ]);
-
-        return response()->json($reservation, 201);
-    }
-
-
     public function deleteAllUsers()
     {
         // ... existing code ...
     }
+
+
+
+     // Get details of a specific parking space
+     public function getParkingSpace($id)
+     {
+         $parkingSpace = ParkingSpace::with(['types', 'pictures', 'reservations'])->findOrFail($id);
+         return response()->json($parkingSpace);
+     }
+
+       // Update a specific parking space
+    public function updateParkingSpace(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'type' => 'nullable|numeric|max:255',
+            'latitude' => 'nullable|numeric',
+            'longitude' => 'nullable|numeric',
+            'address' => 'nullable|string',
+            'description' => 'nullable|string',
+            'capacity' => 'nullable|integer',
+            'contact_info' => 'nullable|string',
+            'amenities' => 'nullable|array',
+            'rating' => 'nullable|numeric|between:1,5',
+        ]);
+
+        $parkingSpace = ParkingSpace::findOrFail($id);
+        $parkingSpace->update($validated);
+        return response()->json(['message' => 'Parking space updated successfully', 'parking_space' => $parkingSpace]);
+    }
+
+     // Delete a specific parking space
+     public function deleteParkingSpace($id)
+     {
+         $parkingSpace = ParkingSpace::findOrFail($id);
+         $parkingSpace->delete();
+         return response()->json(['message' => 'Parking space deleted successfully']);
+     }
+
+     // List available parking types
+     public function listParkingTypes()
+     {
+         $parkingTypes = ParkingType::all();
+         return response()->json($parkingTypes);
+     }
 }
