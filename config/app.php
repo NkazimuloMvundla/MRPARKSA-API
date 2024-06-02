@@ -128,4 +128,9 @@ return [
         'Debugbar' => Barryvdh\Debugbar\ServiceProvider::class,
     ],
 
+    // 'providers' => [
+    //     // Other service providers...
+    //     App\Providers\AuthServiceProvider::class,
+    // ],
+
 ];

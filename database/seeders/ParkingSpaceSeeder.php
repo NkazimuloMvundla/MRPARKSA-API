@@ -23,6 +23,15 @@ class ParkingSpaceSeeder extends Seeder
             [
                 'latitude' => -29.8587,
                 'longitude' => 31.0218,
+                'things_to_know' => 'Parking is at your own risk.',
+                'how_to_redeem' => 'Show your reservation at the entrance.',
+                'cancellation_policy' => 'Free cancellation up to 24 hours before reservation.',
+                'access_hours' => json_encode([
+                    'monday' => ['open' => '08:00', 'close' => '20:00'],
+                    'tuesday' => ['open' => '08:00', 'close' => '20:00'],
+                    // add other days
+                ]),
+                'user_id' => 1,
                 'address' => '123 Beach Rd, Durban, South Africa',
                 'description' => 'Secure parking space near the beach',
                 'capacity' => 50,
@@ -39,13 +48,23 @@ class ParkingSpaceSeeder extends Seeder
             ],
 
             [
+                'user_id' => 1,
                 'latitude' => -29.8637, // Approximately 5km away
                 'longitude' => 31.0268, // Approximately 5km away
+                'user_id' => 1,
                 'address' => '456 City Center Rd, Durban, South Africa',
                 'description' => 'Parking space in the city center',
                 'capacity' => 30,
                 'contact_info' => 'citycenter@example.com',
                 'amenities' => ['Gated', 'Security Guard'],
+                'things_to_know' => 'Parking is at your own risk.',
+                'how_to_redeem' => 'Show your reservation at the entrance.',
+                'cancellation_policy' => 'Free cancellation up to 24 hours before reservation.',
+                'access_hours' => json_encode([
+                    'monday' => ['open' => '08:00', 'close' => '20:00'],
+                    'tuesday' => ['open' => '08:00', 'close' => '20:00'],
+                    // add other days
+                ]),
                 'images' => [
                     'data:image/jpeg;base64,' . base64_encode(file_get_contents(public_path('images/park3.webp'))),
                     'data:image/jpeg;base64,' . base64_encode(file_get_contents(public_path('images/park4.webp'))),
@@ -55,6 +74,7 @@ class ParkingSpaceSeeder extends Seeder
                 ],
             ],
             [
+                'user_id' => 1,
                 'latitude' => -29.8000, // Adjust the latitude to be over 5km away
                 'longitude' => 31.1000, // Adjust the longitude to be over 5km away
                 'address' => '789 Park Ave, Durban, South Africa',
@@ -62,6 +82,14 @@ class ParkingSpaceSeeder extends Seeder
                 'capacity' => 20,
                 'contact_info' => 'contact@example.com',
                 'amenities' => ['Remote Location', 'Easy Access'],
+                'things_to_know' => 'Parking is at your own risk.',
+                'how_to_redeem' => 'Show your reservation at the entrance.',
+                'cancellation_policy' => 'Free cancellation up to 24 hours before reservation.',
+                'access_hours' => json_encode([
+                    'monday' => ['open' => '08:00', 'close' => '20:00'],
+                    'tuesday' => ['open' => '08:00', 'close' => '20:00'],
+                    // add other days
+                ]),
                 'images' => [
                     'data:image/jpeg;base64,' . base64_encode(file_get_contents(public_path('images/park4.webp'))),
                 ],
@@ -73,6 +101,7 @@ class ParkingSpaceSeeder extends Seeder
 
         foreach ($parkingSpaces as $data) {
             $parkingSpace = ParkingSpace::create([
+                'user_id' => 1,
                 'latitude' => $data['latitude'],
                 'longitude' => $data['longitude'],
                 'address' => $data['address'],
@@ -80,7 +109,19 @@ class ParkingSpaceSeeder extends Seeder
                 'capacity' => $data['capacity'],
                 'contact_info' => $data['contact_info'],
                 'amenities' => json_encode($data['amenities']),
-                'rating' => '5.0'
+                'rating' => '5.0',
+
+                'things_to_know' => $data['things_to_know'],
+                'how_to_redeem' => $data['how_to_redeem'],
+                'cancellation_policy' => $data['cancellation_policy'],
+                'description' => $data['description'],
+                'capacity' => $data['capacity'],
+                'contact_info' => $data['contact_info'],
+                'access_hours' => json_encode([
+                    'monday' => ['open' => '08:00', 'close' => '20:00'],
+                    'tuesday' => ['open' => '08:00', 'close' => '20:00'],
+                    // add other days
+                ]),
             ]);
 
             // Save images

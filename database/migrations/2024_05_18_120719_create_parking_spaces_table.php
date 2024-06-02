@@ -14,6 +14,7 @@ class CreateParkingSpacesTable extends Migration
             $table->decimal('longitude', 10, 7);
             $table->string('address')->nullable();
             $table->text('description')->nullable();
+            $table->foreignId('user_id')->constrained()->onDelete('cascade'); // Foreign key to users table
             // $table->decimal('base_price_hourly', 8, 2)->after('longitude');
             // $table->decimal('base_price_monthly', 8, 2)->after('base_price_hourly');
             $table->integer('capacity')->default(1);

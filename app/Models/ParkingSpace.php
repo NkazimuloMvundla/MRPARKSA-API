@@ -10,13 +10,20 @@ class ParkingSpace extends Model
     use HasFactory;
 
     protected $fillable = [
-        'type', 'latitude', 'longitude', 'address', 'description',
-        'capacity', 'contact_info', 'amenities', 'rating'
+        'user_id', 'type', 'latitude', 'longitude', 'address', 'description',
+        'capacity', 'contact_info', 'amenities', 'rating','pre_approval_required',
+        'cancellation_policy', 'access_hours', 'things_to_know', 'how_to_redeem'
     ];
 
     protected $casts = [
         'amenities' => 'array',
+        'pre_approval_required' => 'boolean',
     ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 
     public function pictures()
     {
@@ -32,4 +39,11 @@ class ParkingSpace extends Model
     {
         return $this->belongsToMany(ParkingType::class, 'parking_space_types');
     }
+
+     // Existing relationships
+
+     public function admins()
+     {
+         return $this->belongsToMany(User::class, 'parking_space_admins');
+     }
 }

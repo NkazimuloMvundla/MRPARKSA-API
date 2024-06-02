@@ -1,10 +1,12 @@
 <?php
+
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Reservation;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException; // Import ValidationException
+use App\Models\ParkingSpace;
 
 class ReservationController extends Controller
 {
@@ -37,6 +39,9 @@ class ReservationController extends Controller
                 'price' => 'required|numeric', // amount paid
             ]);
 
+            $parkingSpace = ParkingSpace::findOrFail($validated['parking_space_id']);
+            $status = $parkingSpace->pre_approval_required ? 'pending' : 'approved';
+
             // Create the reservation
             $reservation = Reservation::create([
                 'user_id' => Auth::id(),
@@ -45,6 +50,7 @@ class ReservationController extends Controller
                 'start_time' => $validated['start_time'],
                 'end_time' => $validated['end_time'],
                 'price' => $validated['price'],
+                'status' => $status,
             ]);
 
             // Return a successful response
@@ -58,5 +64,31 @@ class ReservationController extends Controller
         }
     }
 
+    // Get details of a specific reservation
+    public function getReservationDetails($id)
+    {
+        $reservation = Reservation::with('parkingSpace')->findOrFail($id);
+        return response()->json($reservation);
+    }
 
+    public function approveReservation($id)
+    {
+        $reservation = Reservation::findOrFail($id);
+        $reservation->status = 'approved';
+        $reservation->save();
+
+        // Process payment if necessary
+        // ...
+
+        return response()->json(['message' => 'Reservation approved successfully', 'reservation' => $reservation], 200);
+    }
+
+    public function rejectReservation($id)
+    {
+        $reservation = Reservation::findOrFail($id);
+        $reservation->status = 'rejected';
+        $reservation->save();
+
+        return response()->json(['message' => 'Reservation rejected successfully', 'reservation' => $reservation], 200);
+    }
 }

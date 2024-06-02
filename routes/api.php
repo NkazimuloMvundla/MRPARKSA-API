@@ -58,6 +58,14 @@ Route::post('/submit-review', [ParkingController::class, 'submitReview']);
 Route::post('/create-parking-space', [ParkingController::class, 'createParkingSpace'])->middleware('auth:sanctum');
 Route::put('/parking-space/{id}', [ParkingController::class, 'updateParkingSpace'])->middleware('auth:sanctum');
 Route::delete('/parking-space/{id}', [ParkingController::class, 'deleteParkingSpace'])->middleware('auth:sanctum');
+Route::get('/getMyParkingSpaces', [ParkingController::class, 'getMyParkingSpaces']); //get my parking spaces
+Route::put('/approve-reservation/{id}', [ReservationController::class, 'approveReservation'])->middleware('auth:sanctum');
+Route::put('/reject-reservation/{id}', [ReservationController::class, 'rejectReservation'])->middleware('auth:sanctum');
+// Route::post('/add-admin', [ParkingController::class, 'addAdmin'])->middleware('auth:sanctum', 'is_admin');
+
+// routes/web.php or routes/api.php
+Route::post('/assign-admin', [ParkingController::class, 'assignAdmin']);
+
 
 // Route::post('/tokens/create', function (Request $request) {
 //     $token = $request->user()->createToken($request->token_name);
