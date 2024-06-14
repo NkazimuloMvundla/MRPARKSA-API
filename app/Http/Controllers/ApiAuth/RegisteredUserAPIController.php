@@ -25,7 +25,7 @@ class RegisteredUserAPIController extends Controller
      */
     public function store(Request $request):JsonResponse
     {
-        //dd($request);
+        dd($request);
 
         try {
             $validatedData = $request->validate([

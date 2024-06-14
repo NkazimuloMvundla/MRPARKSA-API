@@ -12,18 +12,22 @@ use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\ReservationController;
 use App\Http\Controllers\ParkingController;
 use App\Http\Controllers\ReviewController;
-// Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
-//     return $request->user();
-// });
+use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
+
+Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
+    return $request->user();
+});
 
 
-Route::get('/users', [RegisteredUserAPIController::class, 'getUsers'])
-                ->middleware('guest')
-                ->name('getUsers');
+// Route::get('/users', [RegisteredUserAPIController::class, 'getUsers'])
+//                 ->middleware('guest')
+//                 ->name('getUsers');
+Route::middleware([EnsureFrontendRequestsAreStateful::class])->group(function () {
+    Route::post('/register', [RegisteredUserAPIController::class, 'store'])->middleware('guest')->name('register');
+    Route::post('/login', [AuthenticatedSessionController::class, 'store'])->middleware('guest')->name('login');
+});
 
-Route::post('/register', [RegisteredUserAPIController::class, 'store'])
-                ->middleware('guest')
-                ->name('register');
+
 
 // Route::post('/search-parking', [RegisteredUserAPIController::class, 'store'])
 // ->middleware('guest')
@@ -34,8 +38,6 @@ Route::post('/deleteAllUsers', [RegisteredUserAPIController::class, 'deleteAllUs
     ->middleware(['token.present', 'token.valid', 'auth:sanctum'])
     ->name('deleteAllUsers');
 
-Route::middleware('guest')->post('/login', [AuthenticatedSessionController::class, 'store'])
-    ->name('login');
 
 
 //user-parking-routes
