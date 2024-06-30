@@ -9,7 +9,7 @@ class ParkingSpacePicture extends Model
     use HasFactory;
 
     protected $fillable = [
-        'parking_space_id', 'image_path',
+        'parking_space_id', 'image_base64',
     ];
 
     public function parkingSpace()

@@ -22,12 +22,14 @@ class AuthenticatedSessionController extends Controller
             $request->authenticate();
 
             $user = User::where('email', $request->email)->first();
-
+           // dd($user);
+            //before an admin can change anything, check if they have enough rights, check if thier  userId exist on that specifi space
             $token = $request->user()->createToken('api-token')->plainTextToken;
             return response()->json([
                 'access_token' => $token,
                 'token_type' => 'Bearer',
                 'username' => $user->name,
+                'account_type' => $user->account_type
             ], 201);
         } catch (ValidationException $e) {
             return response()->json([

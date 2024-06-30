@@ -1,6 +1,7 @@
 <?php
 
-namespace App\Http\Controllers\Auth;
+// namespace App\Http\Controllers\Auth;
+namespace App\Http\Controllers\ApiAuth\Auth;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
@@ -27,7 +28,7 @@ class PasswordResetLinkController extends Controller
         $status = Password::sendResetLink(
             $request->only('email')
         );
-
+       // dd($status);
         if ($status != Password::RESET_LINK_SENT) {
             throw ValidationException::withMessages([
                 'email' => [__($status)],

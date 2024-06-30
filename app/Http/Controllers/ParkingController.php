@@ -25,78 +25,218 @@ class ParkingController extends Controller
 {
     public function createParkingSpace(Request $request)
     {
-        dd($request);
+        // Decode JSON string if it's coming as a JSON string
+        // if (is_string($redeemSteps)) {
+        //     $redeemSteps = json_decode($redeemSteps, true);
+        // }
+        // dd($request);
+        // Ensure it's correctly encoded as JSON
 
-        $validated = Validator::make($request->all(), [
-            'latitude' => 'required|numeric',
-            'longitude' => 'required|numeric',
-            'address' => 'nullable|string',
-            'description' => 'nullable|string',
-            'price' => 'required|numeric',
-            'capacity' => 'required|integer',
-            'contact_info' => 'nullable|string',
-            'amenities' => 'nullable|array',
-            'images' => 'nullable|array',
-            'images.*' => 'string', // base64 strings are expected
-            'types' => 'required|array',
-            'types.*' => 'exists:parking_types,id', // Validate that each type exists
-            'types.*.price' => 'required|numeric',
-            'pre_approval_required' => 'boolean',
-            'cancellation_policy' => 'sometimes|string',
-            'access_hours' => 'sometimes|array',
-            'things_to_know' => 'sometimes|string',
-            'how_to_redeem' => 'sometimes|string',
-        ]);
+        try {
+            // Validate the request
+            $validated = $request->validate([
+                'typeIds' => 'required|array',
+                'typeIds.*' => 'exists:parking_types,id',
+                'latitude' => 'required|numeric',
+                'longitude' => 'required|numeric',
+                'address' => 'required|string|max:255',
+                'description' => 'nullable|string',
+                'capacity' => 'nullable|numeric',
+                'contact_info' => 'required|string|max:255',
+                'amenities' => 'nullable|string',
+                'pre_approval_required' => 'boolean',
+                'cancellation_policy' => 'nullable|string',
+                'access_hours' => 'nullable',
+                'things_to_know' => 'nullable|string',
+                'how_to_redeem' => 'nullable|string',
+                'pictures' => 'nullable|array',
+                'pictures.*.image_base64' => 'nullable|string',
+            ]);
+            // $redeemStepsJson = json_encode($validated['how_to_redeem']);
+            // dd($redeemStepsJson);
+            // $value = data_get($request, '*.pictures');
+            // dd('pictures');
+            // dd($validated);
+            // Determine if updating or creating
+            if ($request->has('id') && $request->id) {
+                // Updating existing parking space
+                $parkingSpace = ParkingSpace::findOrFail($request->id);
+               // dd($request);
+                $parkingSpace->update([
+                    'latitude' => $validated['latitude'],
+                    'longitude' => $validated['longitude'],
+                    'address' => $validated['address'],
+                    'description' => $validated['description'] ?? '',
+                    'capacity' => $validated['capacity'],
+                    'contact_info' => $validated['contact_info'],
+                    'amenities' => $validated['amenities'] ?? '',
+                    'pre_approval_required' => $validated['pre_approval_required'] ?? false,
+                    'cancellation_policy' => $validated['cancellation_policy'] ?? '',
+                    'access_hours' => json_encode($validated['access_hours'] ?? []),
+                    'things_to_know' => $validated['things_to_know'] ?? '',
+                    'how_to_redeem' => $validated['how_to_redeem'] ?? '',
+                ]);
 
-        if ($validated->fails()) {
-            return response()->json(['errors' => $validated->errors()], 422);
-        }
-        // $validated['access_hours'] = json_encode($validated['access_hours'] ?? []);
-
-        $parkingSpace = ParkingSpace::create([
-            'user_id' => Auth::id(),
-            'type' => $validated['type'],
-            'latitude' => $validated['latitude'],
-            'longitude' => $validated['longitude'],
-            'address' => $validated['address'],
-            'description' => $validated['description'],
-            'capacity' => $validated['capacity'],
-            'contact_info' => $validated['contact_info'],
-            'amenities' => $validated['amenities'],
-            'pre_approval_required' => $validated['pre_approval_required'] ?? false,
-            'cancellation_policy' => $validated['cancellation_policy'],
-            'access_hours' => json_encode($validated['access_hours'] ?? []),
-            'things_to_know' => $validated['things_to_know'],
-            'how_to_redeem' => $validated['how_to_redeem'],
-        ]);
-
-        if ($request->has('images')) {
-            foreach ($request->images as $imageBase64) {
-                ParkingSpacePicture::create([
-                    'parking_space_id' => $parkingSpace->id,
-                    'image_base64' => $imageBase64,
+                // Remove existing images and replace with new ones
+                $parkingSpace->pictures()->delete();
+            } else {
+                // Creating new parking space
+                $parkingSpace = ParkingSpace::create([
+                    'user_id' => Auth::id(),
+                    'latitude' => $validated['latitude'],
+                    'longitude' => $validated['longitude'],
+                    'address' => $validated['address'],
+                    'description' => $validated['description'] ?? '',
+                    'capacity' => $validated['capacity'],
+                    'contact_info' => $validated['contact_info'],
+                    'amenities' => $validated['amenities'] ?? '',
+                    'pre_approval_required' => $validated['pre_approval_required'] ?? false,
+                    'cancellation_policy' => $validated['cancellation_policy'] ?? '',
+                    'access_hours' => json_encode($validated['access_hours'] ?? []),
+                    'things_to_know' => $validated['things_to_know'] ?? '',
+                    'how_to_redeem' => $validated['how_to_redeem'] ?? '',
+                    'rating' => 0,
                 ]);
             }
-        }
+            // Assuming $validated['typeIds'] contains the new type IDs from the user input
+            $validated['types'] = $validated['typeIds'];
+            unset($validated['typeIds']);
 
-        // Attach types to the parking space
-        foreach ($validated['types'] as $typeId) {
-            ParkingSpaceType::create([
-                'parking_space_id' => $parkingSpace->id,
-                'parking_type_id' => $typeId,
-            ]);
-        }
+            // Retrieve existing type IDs associated with the parking space
+            $existingTypeIds = $parkingSpace->types()->pluck('parking_types.id')->toArray();
 
-        foreach ($request->types as $type) {
-            ParkingSpacePrice::create([
-                'parking_space_id' => $parkingSpace->id,
-                'parking_type_id' => $type['type_id'],
-                'price' => $type['price'],
-            ]);
-        }
+            // Determine types to delete (existing types not in new types)
+            $typesToDelete = array_diff($existingTypeIds, $validated['types']);
 
-        return response()->json($parkingSpace, 201);
+            // Delete types that are no longer selected by the user
+            $parkingSpace->types()->detach($typesToDelete);
+
+            // Attach new types to the parking space
+            foreach ($validated['types'] as $typeId) {
+                // Check if the type already exists before attaching
+                if (!in_array($typeId, $existingTypeIds)) {
+                    ParkingSpaceType::create([
+                        'parking_space_id' => $parkingSpace->id,
+                        'parking_type_id' => $typeId,
+                    ]);
+                }
+            }
+
+            //  dd($validated);
+
+            if (!empty($validated['pictures'])) {
+                $totalImages = count($validated['pictures']);
+                if ($totalImages > 5) {
+                    return response()->json(['error' => 'You can upload a maximum of 5 images'], 422);
+                }
+
+                foreach ($validated['pictures'] as $imageBase64) {
+                    foreach ($imageBase64 as $base64) {
+                        // dd($base64);
+                        // Perform any additional validation if necessary
+                        if (!is_string($base64)) {
+                            return response()->json(['error' => 'Invalid image format'], 422);
+                        } else {
+                            ParkingSpacePicture::create([
+                                'parking_space_id' => $parkingSpace->id,
+                                'image_base64' => $base64,
+                            ]);
+                        }
+                    }
+                    // ParkingSpacePicture::create([
+                    //     'parking_space_id' => $parkingSpace->id,
+                    //     'image_base64' => $imageBase64,
+                    // ]);
+                }
+            }
+
+            return response()->json($parkingSpace, $request->has('id') ? 200 : 201);
+        } catch (ValidationException $e) {
+            // Return validation errors as JSON
+            return response()->json(['errors' => $e->errors()], 422);
+        } catch (\Exception $e) {
+            // Return other errors as JSON
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
+
+    // public function createParkingSpace(Request $request)
+    // {
+    //     try {
+
+    //         // Validate the request
+    //         $validated = $request->validate([
+    //             'types' => 'required|array',
+    //             'types.*' => 'exists:parking_types,id',
+    //             'latitude' => 'required|numeric',
+    //             'longitude' => 'required|numeric',
+    //             'address' => 'required|string|max:255',
+    //             'description' => 'nullable|string',
+    //             'capacity' => 'nullable|integer',
+    //             'contact_info' => 'required|string|max:255',
+    //             'amenities' => 'nullable|string',
+    //             'pre_approval_required' => 'boolean',
+    //             'cancellation_policy' => 'nullable|string',
+    //             'access_hours' => 'nullable',
+    //             'things_to_know' => 'nullable|string',
+    //             'how_to_redeem' => 'nullable|string',
+    //             'images' => 'nullable|array',
+    //             'images.*' => 'string', // Assuming images are sent as base64 encoded strings
+    //         ]);
+    //         //dd($validated);
+    //         // Create the parking space
+    //         $parkingSpace = ParkingSpace::create([
+    //             'user_id' => Auth::id(),
+    //             'latitude' => $validated['latitude'],
+    //             'longitude' => $validated['longitude'],
+    //             'address' => $validated['address'],
+    //             'description' => $validated['description'] ?? '',
+    //             'capacity' => $validated['capacity'],
+    //             'contact_info' => $validated['contact_info'],
+    //             'amenities' => $validated['amenities'] ?? '',
+    //             'pre_approval_required' => $validated['pre_approval_required'] ?? false,
+    //             'cancellation_policy' => $validated['cancellation_policy'] ?? '',
+    //             'access_hours' => json_encode($validated['access_hours'] ?? []),
+    //             'things_to_know' => $validated['things_to_know'] ?? '',
+    //             'how_to_redeem' => $validated['how_to_redeem'] ?? '',
+    //             'rating' => 0
+    //         ]);
+    //             //    dd($validated);
+    //         // Attach types to the parking space
+    //         foreach ($validated['types'] as $type) {
+    //             ParkingSpaceType::create([
+    //                 'parking_space_id' => $parkingSpace->id,
+    //                 'parking_type_id' => $type,
+    //             ]);
+
+    //             // ParkingSpacePrice::create([
+    //             //     'parking_space_id' => $parkingSpace->id,
+    //             //     'parking_type_id' => $type,
+    //             //     'price' => $type['price'],
+    //             // ]);
+    //         }
+
+    //         // Handle images if any
+    //         if (!empty($validated['images'])) {
+    //             foreach ($validated['images'] as $imageBase64) {
+    //               //  dd($imageBase64);
+    //                 ParkingSpacePicture::create([
+    //                     'parking_space_id' => $parkingSpace->id,
+    //                     'image_base64' => $imageBase64,
+    //                 ]);
+    //             }
+    //         }
+
+    //         return response()->json($parkingSpace, 201);
+
+    //     } catch (ValidationException $e) {
+    //         // Return validation errors as JSON
+    //         return response()->json(['errors' => $e->errors()], 422);
+    //     } catch (\Exception $e) {
+    //         // Return other errors as JSON
+    //         return response()->json(['error' => $e->getMessage()], 500);
+    //     }
+    // }
 
     public function findParking(Request $request)
     {
@@ -197,6 +337,7 @@ class ParkingController extends Controller
     // Update a specific parking space
     public function updateParkingSpace(Request $request, $id)
     {
+        dd($request);
         $validated = $request->validate([
             'type' => 'nullable|numeric|max:255',
             'latitude' => 'nullable|numeric',
@@ -233,6 +374,7 @@ class ParkingController extends Controller
     public function getMyParkingSpaces()
     {
         $parkingSpaces = ParkingSpace::where('user_id', Auth::id())->with(['types', 'pictures', 'reservations'])->get();
+        //dd($parkingSpaces);
         return response()->json($parkingSpaces);
     }
 
@@ -291,8 +433,7 @@ class ParkingController extends Controller
         } catch (ValidationException $e) {
             // Handle the case where user with specified email is not found
             return response()->json(['message' => 'User not found'], 404);
-        }
-        catch (\Exception $e) {
+        } catch (\Exception $e) {
             // Handle other exceptions and return an appropriate response
             return response()->json(['message' => 'Server error', 'error' => $e->getMessage()], 500);
         }

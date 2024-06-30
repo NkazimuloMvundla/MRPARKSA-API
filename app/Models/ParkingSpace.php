@@ -20,6 +20,8 @@ class ParkingSpace extends Model
         'pre_approval_required' => 'boolean',
     ];
 
+    protected $appends = ['redeem_steps'];
+
     public function user()
     {
         return $this->belongsTo(User::class);
@@ -45,5 +47,11 @@ class ParkingSpace extends Model
      public function admins()
      {
          return $this->belongsToMany(User::class, 'parking_space_admins');
+     }
+
+     public function getRedeemStepsAttribute()
+     {
+         $redeemSteps = json_decode($this->attributes['how_to_redeem'], true);
+         return is_array($redeemSteps) ? $redeemSteps : [$this->attributes['how_to_redeem']];
      }
 }

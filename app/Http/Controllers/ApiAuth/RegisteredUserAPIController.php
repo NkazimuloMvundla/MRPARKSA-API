@@ -25,7 +25,7 @@ class RegisteredUserAPIController extends Controller
      */
     public function store(Request $request):JsonResponse
     {
-        dd($request);
+       //dd($request);
 
         try {
             $validatedData = $request->validate([
@@ -33,13 +33,16 @@ class RegisteredUserAPIController extends Controller
                 'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
                 'surname' => ['required', 'string', 'max:255'],
                 'password' => ['required', 'confirmed', Password::defaults()],
+                'accountType' => ['required', 'string', 'max:255'],
             ]);
+           // dd($validatedData);
 
             $user = User::create([
                 'name' => $validatedData['name'],
                 'email' => $validatedData['email'],
                 'surname' => $validatedData['surname'],
                 'password' => Hash::make($validatedData['password']),
+                'account_type' => $validatedData['accountType']
             ]);
 
             event(new Registered($user));
@@ -47,13 +50,15 @@ class RegisteredUserAPIController extends Controller
             Auth::login($user);
             return response()->json(['message' => 'User Registered successfully', 'users' => $user], 200);
 
-        } catch (ValidationException $e) {
-           // dd($e);
-            return response()->json(['message' => 'Validation failed', 'errors' => $e->errors()], 422);
+        }catch (ValidationException $e) {
+            return response()->json([
+                'message' => $e->getMessage(), // Use the error message from the exception
+            ], 422);
         } catch (\Exception $e) {
            // dd($e);
             Log::error('Error while registering user: ' . $e->getMessage());
-            return response()->json(['message' => 'Failed to register user'], 500);
+            // return response()->json(['message' => 'Failed to register user'], 500);
+            return response()->json(['message' => 'Failed to register', 'errors' => $e], 500);
         }
     }
 
