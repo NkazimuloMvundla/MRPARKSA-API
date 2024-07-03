@@ -360,9 +360,21 @@ class ParkingController extends Controller
     public function deleteParkingSpace($id)
     {
         $parkingSpace = ParkingSpace::findOrFail($id);
+
+        // Delete related pictures
+        foreach ($parkingSpace->pictures as $picture) {
+            $picture->delete();
+        }
+
+        // Delete related types (pivot table records if using many-to-many)
+        $parkingSpace->types()->detach();
+
+        // Finally, delete the parking space itself
         $parkingSpace->delete();
+
         return response()->json(['message' => 'Parking space deleted successfully']);
     }
+
 
     // List available parking types
     public function listParkingTypes()

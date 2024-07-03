@@ -22,6 +22,7 @@ class CreateParkingSpacesTable extends Migration
             $table->json('amenities')->nullable();
             $table->float('rating', 2, 1)->default(0);
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

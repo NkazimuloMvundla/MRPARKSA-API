@@ -17,6 +17,7 @@ class CreateParkingTypesTable extends Migration
             $table->id();
             $table->string('name')->unique(); // hourly, monthly, airport
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

@@ -18,6 +18,7 @@ class CreateParkingSpaceTypesTable extends Migration
             $table->foreignId('parking_space_id')->constrained()->onDelete('cascade');
             $table->foreignId('parking_type_id')->constrained()->onDelete('cascade');
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

@@ -18,6 +18,7 @@ class CreateParkingSpacePicturesTable extends Migration
             $table->foreignId('parking_space_id')->constrained()->onDelete('cascade');
             $table->longText('image_base64'); // Change to store base64 string
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 
