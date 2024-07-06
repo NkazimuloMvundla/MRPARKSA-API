@@ -47,4 +47,18 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    public function parkingSpaces()
+    {
+        return $this->belongsToMany(ParkingSpace::class, 'parking_space_admins');
+    }
+
+    public function parkingSpaceAdmins()
+    {
+        return $this->hasMany(ParkingSpaceAdmin::class);
+    }
+    public function reservations()
+    {
+        return $this->hasMany(Reservation::class);
+    }
 }

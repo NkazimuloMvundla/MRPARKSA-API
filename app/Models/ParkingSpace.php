@@ -51,6 +51,17 @@ class ParkingSpace extends Model
          return $this->belongsToMany(User::class, 'parking_space_admins');
      }
 
+     public function parkingSpaceAdmins()
+     {
+         return $this->hasMany(ParkingSpaceAdmin::class);
+     }
+
+
+     public function prices()
+     {
+         return $this->hasMany(ParkingSpacePrice::class);
+     }
+
      public function getRedeemStepsAttribute()
      {
          $redeemSteps = json_decode($this->attributes['how_to_redeem'], true);

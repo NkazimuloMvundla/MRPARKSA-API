@@ -20,18 +20,11 @@ use App\Models\ReviewAspect;
 use App\Models\ReviewAspectRating;
 use App\Models\User;
 use Illuminate\Support\Facades\Gate;
-
+use App\Http\helpers\Helper;
 class ParkingController extends Controller
 {
     public function createParkingSpace(Request $request)
     {
-        // Decode JSON string if it's coming as a JSON string
-        // if (is_string($redeemSteps)) {
-        //     $redeemSteps = json_decode($redeemSteps, true);
-        // }
-        // dd($request);
-        // Ensure it's correctly encoded as JSON
-
         try {
             // Validate the request
             $validated = $request->validate([
@@ -52,16 +45,11 @@ class ParkingController extends Controller
                 'pictures' => 'nullable|array',
                 'pictures.*.image_base64' => 'nullable|string',
             ]);
-            // $redeemStepsJson = json_encode($validated['how_to_redeem']);
-            // dd($redeemStepsJson);
-            // $value = data_get($request, '*.pictures');
-            // dd('pictures');
-            // dd($validated);
             // Determine if updating or creating
             if ($request->has('id') && $request->id) {
                 // Updating existing parking space
                 $parkingSpace = ParkingSpace::findOrFail($request->id);
-               // dd($request);
+                // dd($request);
                 $parkingSpace->update([
                     'latitude' => $validated['latitude'],
                     'longitude' => $validated['longitude'],
@@ -79,6 +67,8 @@ class ParkingController extends Controller
 
                 // Remove existing images and replace with new ones
                 $parkingSpace->pictures()->delete();
+
+
             } else {
                 // Creating new parking space
                 $parkingSpace = ParkingSpace::create([
@@ -122,7 +112,7 @@ class ParkingController extends Controller
                 }
             }
 
-            //  dd($validated);
+
 
             if (!empty($validated['pictures'])) {
                 $totalImages = count($validated['pictures']);
@@ -141,6 +131,7 @@ class ParkingController extends Controller
                                 'parking_space_id' => $parkingSpace->id,
                                 'image_base64' => $base64,
                             ]);
+
                         }
                     }
                     // ParkingSpacePicture::create([
@@ -148,111 +139,78 @@ class ParkingController extends Controller
                     //     'image_base64' => $imageBase64,
                     // ]);
                 }
+                Helper::recordAuditLog(
+                    'Create|Update',
+                    'parkingSpace',
+                     $request->id,
+                    null,
+                    ['admin_user_id' => Auth::id()]
+                );
             }
 
             return response()->json($parkingSpace, $request->has('id') ? 200 : 201);
         } catch (ValidationException $e) {
+            //dd($e);
             // Return validation errors as JSON
             return response()->json(['errors' => $e->errors()], 422);
         } catch (\Exception $e) {
+            // dd($e);
             // Return other errors as JSON
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
+    public function updatePricing(Request $request)
+    {
+        // Validate the request data
+        $request->validate([
+            'prices' => 'required|array',
+            'prices.*.parking_space_id' => 'required|integer',
+            'prices.*.type_id' => 'required|numeric', // Adjust validation rules as per your actual data types
+            'prices.*.price' => 'required|numeric',
+        ]);
 
-    // public function createParkingSpace(Request $request)
-    // {
-    //     try {
+        // dd($request);
 
-    //         // Validate the request
-    //         $validated = $request->validate([
-    //             'types' => 'required|array',
-    //             'types.*' => 'exists:parking_types,id',
-    //             'latitude' => 'required|numeric',
-    //             'longitude' => 'required|numeric',
-    //             'address' => 'required|string|max:255',
-    //             'description' => 'nullable|string',
-    //             'capacity' => 'nullable|integer',
-    //             'contact_info' => 'required|string|max:255',
-    //             'amenities' => 'nullable|string',
-    //             'pre_approval_required' => 'boolean',
-    //             'cancellation_policy' => 'nullable|string',
-    //             'access_hours' => 'nullable',
-    //             'things_to_know' => 'nullable|string',
-    //             'how_to_redeem' => 'nullable|string',
-    //             'images' => 'nullable|array',
-    //             'images.*' => 'string', // Assuming images are sent as base64 encoded strings
-    //         ]);
-    //         //dd($validated);
-    //         // Create the parking space
-    //         $parkingSpace = ParkingSpace::create([
-    //             'user_id' => Auth::id(),
-    //             'latitude' => $validated['latitude'],
-    //             'longitude' => $validated['longitude'],
-    //             'address' => $validated['address'],
-    //             'description' => $validated['description'] ?? '',
-    //             'capacity' => $validated['capacity'],
-    //             'contact_info' => $validated['contact_info'],
-    //             'amenities' => $validated['amenities'] ?? '',
-    //             'pre_approval_required' => $validated['pre_approval_required'] ?? false,
-    //             'cancellation_policy' => $validated['cancellation_policy'] ?? '',
-    //             'access_hours' => json_encode($validated['access_hours'] ?? []),
-    //             'things_to_know' => $validated['things_to_know'] ?? '',
-    //             'how_to_redeem' => $validated['how_to_redeem'] ?? '',
-    //             'rating' => 0
-    //         ]);
-    //             //    dd($validated);
-    //         // Attach types to the parking space
-    //         foreach ($validated['types'] as $type) {
-    //             ParkingSpaceType::create([
-    //                 'parking_space_id' => $parkingSpace->id,
-    //                 'parking_type_id' => $type,
-    //             ]);
+        try {
+            // Process each price entry and insert into the pricing table
+            foreach ($request->prices as $priceData) {
+                ParkingSpacePrice::updateOrCreate(
+                    [
+                        'parking_space_id' => $priceData['parking_space_id'],
+                        'parking_type_id' => $priceData['type_id'],
+                    ],
+                    [
+                        'price' => $priceData['price'],
+                    ]
+                );
+                Helper::recordAuditLog(
+                    'Create|Update',
+                    'Pricing',
+                    $priceData['parking_space_id'],
+                    null,
+                    ['admin_user_id' => Auth::id()]
+                );
+            }
 
-    //             // ParkingSpacePrice::create([
-    //             //     'parking_space_id' => $parkingSpace->id,
-    //             //     'parking_type_id' => $type,
-    //             //     'price' => $type['price'],
-    //             // ]);
-    //         }
-
-    //         // Handle images if any
-    //         if (!empty($validated['images'])) {
-    //             foreach ($validated['images'] as $imageBase64) {
-    //               //  dd($imageBase64);
-    //                 ParkingSpacePicture::create([
-    //                     'parking_space_id' => $parkingSpace->id,
-    //                     'image_base64' => $imageBase64,
-    //                 ]);
-    //             }
-    //         }
-
-    //         return response()->json($parkingSpace, 201);
-
-    //     } catch (ValidationException $e) {
-    //         // Return validation errors as JSON
-    //         return response()->json(['errors' => $e->errors()], 422);
-    //     } catch (\Exception $e) {
-    //         // Return other errors as JSON
-    //         return response()->json(['error' => $e->getMessage()], 500);
-    //     }
-    // }
+            return response()->json(['message' => 'Pricing updated successfully'], 200);
+        } catch (\Exception $e) {
+            // Handle any exceptions or errors
+            return response()->json(['message' => 'Failed to update pricing', 'error' => $e->getMessage()], 500);
+        }
+    }
 
     public function findParking(Request $request)
     {
+        // Validate the incoming request
+        $validated = $request->validate([
+            'type' => ['required', 'numeric', 'max:255'], // hourly, monthly, or airport
+            'latitude' => 'required|numeric', // e.g., 37.7749
+            'longitude' => 'required|numeric', // e.g., -122.4194
+            'start_time' => 'required|string', // e.g., 2024-02-03 10:00:00
+            'end_time' => 'required|string|after:start_time', // e.g., 2024-02-03 12:00:00
+        ]);
+
         try {
-            // Validate the incoming request
-            $validated = $request->validate([
-                'type' => ['required', 'numeric', 'max:255'], // hourly, monthly, or airport
-                'latitude' => 'required|numeric', // e.g., 37.7749
-                'longitude' => 'required|numeric', // e.g., -122.4194
-                'start_time' => 'required|string', // e.g., 2024-02-03 10:00:00
-                'end_time' => 'required|string|after:start_time', // e.g., 2024-02-03 12:00:00
-            ]);
-
-            // Define the radius (in kilometers) for the search
-            $radius = 5;
-
             // Retrieve the necessary data from the validated input
             $type = $validated['type'];
             $latitude = $validated['latitude'];
@@ -260,23 +218,30 @@ class ParkingController extends Controller
             $start_time = $validated['start_time'];
             $end_time = $validated['end_time'];
 
+            // Define the radius (in kilometers) for the search
+            $radius = 5;
+
             // Calculate the bounding box for the query
             $boundingBox = $this->calculateBoundingBox($latitude, $longitude, $radius);
-            //dd($boundingBox);
-            $nearbyParkingSpaces = ParkingSpace::selectRaw("
-            *,
-            (6371 * acos(
-                cos(radians($latitude)) *
-                cos(radians(latitude)) *
-                cos(radians(longitude) - radians($longitude)) +
-                sin(radians($latitude)) *
-                sin(radians(latitude))
-            )) AS distance")
+
+            // Query to find nearby parking spaces with required conditions
+            $nearbyParkingSpaces = ParkingSpace::with(['pictures', 'prices' => function($query) use ($type) {
+                    $query->where('parking_type_id', $type);
+                }])
+                ->selectRaw("
+                    *,
+                    (6371 * acos(
+                        cos(radians($latitude)) *
+                        cos(radians(latitude)) *
+                        cos(radians(longitude) - radians($longitude)) +
+                        sin(radians($latitude)) *
+                        sin(radians(latitude))
+                    )) AS distance")
                 ->having('distance', '<', $radius)
                 ->whereBetween('latitude', [$boundingBox['min_lat'], $boundingBox['max_lat']])
                 ->whereBetween('longitude', [$boundingBox['min_lng'], $boundingBox['max_lng']])
                 ->whereHas('types', function ($query) use ($type) {
-                    $query->where('parking_space_types.parking_type_id', $type);  // Assuming 'parking_types' is the alias for your parking types table
+                    $query->where('parking_space_types.parking_type_id', $type);
                 })
                 ->whereDoesntHave('reservations', function ($query) use ($start_time, $end_time) {
                     $query->where(function ($query) use ($start_time, $end_time) {
@@ -296,6 +261,7 @@ class ParkingController extends Controller
             return response()->json(['message' => 'Server error', 'error' => $e->getMessage()], 500);
         }
     }
+
 
 
     private function calculateBoundingBox($latitude, $longitude, $radius)
@@ -383,71 +349,65 @@ class ParkingController extends Controller
         return response()->json($parkingTypes);
     }
 
+    // public function getMyParkingSpaces()
+    // {
+    //     $parkingSpaces = ParkingSpace::where('user_id', Auth::id())->with(['types', 'pictures', 'reservations', 'prices'])->get();
+    //     //.($parkingSpaces);
+    //     return response()->json($parkingSpaces);
+    // }
     public function getMyParkingSpaces()
     {
-        $parkingSpaces = ParkingSpace::where('user_id', Auth::id())->with(['types', 'pictures', 'reservations'])->get();
-        //dd($parkingSpaces);
-        return response()->json($parkingSpaces);
+        $userId = Auth::id();
+
+        // Fetch parking spaces where the user is the owner
+        $ownedParkingSpaces = ParkingSpace::where('user_id', $userId)->with(['types', 'pictures', 'reservations', 'prices'])->get();
+
+        // Fetch parking spaces where the user is an assigned admin
+        $adminParkingSpaces = ParkingSpace::whereHas('admins', function ($query) use ($userId) {
+            $query->where('user_id', $userId);
+        })->with(['types', 'pictures', 'reservations', 'prices'])->get();
+
+        // Merge the collections
+        $allParkingSpaces = $ownedParkingSpaces->merge($adminParkingSpaces);
+
+        return response()->json($allParkingSpaces);
     }
 
-    /**
-     * Assign an admin to a parking space.
-     */
-    // public function assignAdmin(Request $request)
-    // {
-    //     // Find the parking space
-    //     $parkingSpace = ParkingSpace::findOrFail(1);
-
-    //     // Check if the user is authorized based on the policy
-    //     // if (Gate::denies('assignAdmin', $parkingSpace)) {
-    //     //     return response()->json(['message' => 'Unauthorized'], 403);
-    //     // }
-
-    //     // Validate the request
-    //     $request->validate([
-    //         'email' => 'required|email|exists:users,email',
-    //     ]);
-
-    //     // Find the user by email
-    //     $user = User::where('email', $request->email)->firstOrFail();
-
-    //     // Attach the user as an admin to the parking space
-    //     $parkingSpace->admins()->attach($user);
-
-    //     // Return success response
-    //     return response()->json(['message' => 'Admin assigned successfully'], 200);
-    // }
-
-    public function assignAdmin(Request $request)
+    public function addAdmin(Request $request)
     {
         try {
-            // Find the parking space
-            $parkingSpace = ParkingSpace::findOrFail(1);
-
-            // Check if the user is authorized based on the policy
-            // if (Gate::denies('assignAdmin', $parkingSpace)) {
-            //     return response()->json(['message' => 'Unauthorized'], 403);
-            // }
-
             // Validate the request
             $request->validate([
                 'email' => 'required|email|exists:users,email',
-                'parking_space_id' => 'required|numeric',
             ]);
 
             // Find the user by email
             $user = User::where('email', $request->email)->firstOrFail();
 
-            // Attach the user as an admin to the parking space
-            $parkingSpace->admins()->attach($user);
+            // Find all parking spaces for the authenticated user
+            $parkingSpaces = ParkingSpace::where('user_id', Auth::id())->get();
 
-            return response()->json(['message' => 'Admin assigned successfully'], 200);
+            // Check if there are no parking spaces for the user
+            if ($parkingSpaces->isEmpty()) {
+                return response()->json(['message' => 'No parking spaces found for the user'], 404);
+            }
+
+            // Attach the user as an admin to each parking space
+            foreach ($parkingSpaces as $parkingSpace) {
+                // Check if the user is already an admin for the parking space
+                if (!$parkingSpace->admins->contains($user->id)) {
+                    $parkingSpace->admins()->attach($user);
+                }
+            }
+
+            return response()->json(['message' => 'Admin assigned to all parking spaces successfully'], 200);
         } catch (ValidationException $e) {
-            // Handle the case where user with specified email is not found
+            // Handle the case where the user with the specified email is not found
             return response()->json(['message' => 'User not found'], 404);
         } catch (\Exception $e) {
             // Handle other exceptions and return an appropriate response
             return response()->json(['message' => 'Server error', 'error' => $e->getMessage()], 500);
         }
     }
+
 }

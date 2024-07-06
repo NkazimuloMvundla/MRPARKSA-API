@@ -15,4 +15,8 @@ class ParkingType extends Model
     {
         return $this->belongsToMany(ParkingSpace::class, 'parking_space_types');
     }
+    public function prices()
+    {
+        return $this->hasMany(ParkingSpacePrice::class);
+    }
 }

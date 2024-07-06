@@ -25,6 +25,7 @@ class DatabaseSeeder extends Seeder
             ParkingSpaceSeeder::class,
             ReviewAspectSeeder::class,
             ReviewSeeder::class,
+            ReservationSeeder::class
         ]);
     }
 }

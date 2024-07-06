@@ -66,10 +66,13 @@ Route::get('/parking-space/{id}', [ParkingController::class, 'getParkingSpace'])
 Route::get('/parking-types', [ParkingController::class, 'listParkingTypes']);
 
 //reservation
-Route::get('/user-reservations', [ReservationController::class, 'listUserReservations'])->middleware('auth:sanctum');
-Route::delete('/cancel-reservation/{id}', [ReservationController::class, 'cancelReservation'])->middleware('auth:sanctum');
-Route::post('/make-reservation', [ParkingController::class, 'makeReservation']); //->middleware('auth:sanctum');
-
+// Route::get('/user-reservations', [ReservationController::class, 'listUserReservations'])->middleware('auth:sanctum');
+// Route::delete('/cancel-reservation/{id}', [ReservationController::class, 'cancelReservation'])->middleware('auth:sanctum');
+// Route::post('/make-reservation', [ParkingController::class, 'makeReservation']); //->middleware('auth:sanctum');
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/user/reservations', [ReservationController::class, 'listUserReservations']);
+    Route::get('/owner/reservations', [ReservationController::class, 'listOwnerReservations']);
+});
 //reviews
 Route::get('/parking-space/{id}/reviews', [ReviewController::class, 'listReviews']);
 Route::get('/user-reviews', [ReviewController::class, 'listUserReviews'])->middleware('auth:sanctum');
@@ -82,7 +85,8 @@ Route::delete('/parking-space/{id}', [ParkingController::class, 'deleteParkingSp
 Route::get('/getMyParkingSpaces', [ParkingController::class, 'getMyParkingSpaces'])->middleware('auth:sanctum'); //get my parking spaces
 Route::put('/approve-reservation/{id}', [ReservationController::class, 'approveReservation'])->middleware('auth:sanctum');
 Route::put('/reject-reservation/{id}', [ReservationController::class, 'rejectReservation'])->middleware('auth:sanctum');
-// Route::post('/add-admin', [ParkingController::class, 'addAdmin'])->middleware('auth:sanctum', 'is_admin');
+Route::post('/add-admin', [ParkingController::class, 'addAdmin'])->middleware('auth:sanctum');
+Route::put('/update-pricing', [ParkingController::class, 'updatePricing'])->middleware('auth:sanctum');
 
 // routes/web.php or routes/api.php
 Route::post('/assign-admin', [ParkingController::class, 'assignAdmin']);

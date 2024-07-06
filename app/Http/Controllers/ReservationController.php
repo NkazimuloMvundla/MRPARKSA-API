@@ -10,14 +10,29 @@ use App\Models\ParkingSpace;
 
 class ReservationController extends Controller
 {
-    // List reservations of the authenticated user
-    public function listUserReservations()
-    {
-        $userId = Auth::id();
-        $reservations = Reservation::where('user_id', $userId)->with('parkingSpace')->get();
-        return response()->json($reservations);
-    }
+     // List reservations made by the authenticated user
+     public function listUserReservations()
+     {
+         $userId = Auth::id();
+         $reservations = Reservation::where('user_id', $userId)
+             ->with(['parkingSpace', 'parkingType'])
+             ->get();
 
+         return response()->json($reservations);
+     }
+
+     // List reservations for parking spaces owned by the authenticated user
+     public function listOwnerReservations()
+     {
+         $userId = Auth::id();
+         $ownerParkingSpaces = ParkingSpace::where('user_id', $userId)->pluck('id');
+
+         $reservations = Reservation::whereIn('parking_space_id', $ownerParkingSpaces)
+             ->with(['user', 'parkingType'])
+             ->get();
+
+         return response()->json($reservations);
+     }
     // Cancel a reservation
     public function cancelReservation($id)
     {
@@ -91,4 +106,71 @@ class ReservationController extends Controller
 
         return response()->json(['message' => 'Reservation rejected successfully', 'reservation' => $reservation], 200);
     }
+
+//     public function createReservation(Request $request)
+// {
+//     $validatedData = $request->validate([
+//         'parking_space_id' => 'required|exists:parking_spaces,id',
+//         'parking_type_id' => 'required|exists:parking_types,id',
+//         'start_time' => 'required|date',
+//         'end_time' => 'required|string',
+//     ]);
+
+//     $parkingType = ParkingType::find($validatedData['parking_type_id']);
+
+//     DB::beginTransaction();
+//     try {
+//         $reservation = Reservation::create([
+//             'user_id' => Auth::id(),
+//             'parking_space_id' => $validatedData['parking_space_id'],
+//             'parking_type_id' => $validatedData['parking_type_id'],
+//             'start_time' => $validatedData['start_time'],
+//             'end_time' => $validatedData['end_time'],
+//             'price' => null,
+//             'status' => 'Pending',
+//             'pre_approval_required' => $parkingType->pre_approval_required,
+//         ]);
+
+//         // Placeholder for payment authorization logic
+//         $paymentAuthorized = true;
+
+//         if ($parkingType->pre_approval_required && $paymentAuthorized) {
+//             // Notify the parking space owner for approval
+//             Notification::send($reservation->parkingSpace->owner, new ReservationApprovalRequest($reservation));
+//         } elseif (!$parkingType->pre_approval_required && $paymentAuthorized) {
+//             $reservation->update(['price' => $this->calculatePrice($validatedData), 'status' => 'Confirmed']);
+//         }
+
+//         DB::commit();
+//         return response()->json($reservation, 201);
+//     } catch (\Exception $e) {
+//         DB::rollBack();
+//         return response()->json(['error' => 'Failed to create reservation'], 500);
+//     }
+// }
+
+// public function approveReservation(Request $request, Reservation $reservation)
+// {
+//     $validatedData = $request->validate([
+//         'price' => 'required|numeric',
+//     ]);
+
+//     DB::beginTransaction();
+//     try {
+//         $reservation->update(['price' => $validatedData['price'], 'status' => 'Confirmed']);
+
+//         // Placeholder for payment capture logic
+//         $paymentCaptured = true;
+
+//         if ($paymentCaptured) {
+//             DB::commit();
+//             return response()->json(['message' => 'Reservation approved and payment captured']);
+//         } else {
+//             throw new \Exception('Payment capture failed');
+//         }
+//     } catch (\Exception $e) {
+//         DB::rollBack();
+//         return response()->json(['error' => 'Failed to approve reservation'], 500);
+//     }
+// }
 }
