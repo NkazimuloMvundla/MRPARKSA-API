@@ -219,11 +219,11 @@ class ParkingController extends Controller
             $end_time = $validated['end_time'];
 
             // Define the radius (in kilometers) for the search
-            $radius = 5;
+            $radius = 50;
 
             // Calculate the bounding box for the query
             $boundingBox = $this->calculateBoundingBox($latitude, $longitude, $radius);
-
+           // dd($boundingBox);
             // Query to find nearby parking spaces with required conditions
             $nearbyParkingSpaces = ParkingSpace::with(['pictures', 'prices' => function($query) use ($type) {
                     $query->where('parking_type_id', $type);
@@ -250,7 +250,7 @@ class ParkingController extends Controller
                     });
                 })
                 ->get();
-
+               // dd($nearbyParkingSpaces);
             // Return the result as JSON response
             return response()->json($nearbyParkingSpaces);
         } catch (ValidationException $e) {
