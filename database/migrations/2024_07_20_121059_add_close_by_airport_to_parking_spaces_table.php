@@ -11,8 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('parking_space_pictures', function (Blueprint $table) {
-            $table->softDeletes();
+        Schema::table('parking_spaces', function (Blueprint $table) {
+            $table->string('close_by_airport')->nullable();
         });
     }
 
@@ -21,8 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('parking_space_pictures', function (Blueprint $table) {
-            $table->softDeletes();
+        Schema::table('parking_spaces', function (Blueprint $table) {
+            $table->dropColumn('close_by_airport');
         });
     }
 };

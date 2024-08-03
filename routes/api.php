@@ -23,6 +23,7 @@ Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
 //                 ->middleware('guest')
 //                 ->name('getUsers');
 Route::middleware([EnsureFrontendRequestsAreStateful::class])->group(function () {
+    // dd("herte");
     Route::post('/register', [RegisteredUserAPIController::class, 'store'])->middleware('guest')->name('register');
     Route::post('/login', [AuthenticatedSessionController::class, 'store'])->middleware('guest')->name('login');
     Route::post('/forgot-password', [PasswordResetLinkController::class, 'store'])
@@ -61,9 +62,10 @@ Route::post('/deleteAllUsers', [RegisteredUserAPIController::class, 'deleteAllUs
 
 //user-parking-routes
 
-Route::get('/find-parking', [ParkingController::class, 'findParking']);
-Route::get('/parking-space/{id}', [ParkingController::class, 'getParkingSpace']);
-Route::get('/parking-types', [ParkingController::class, 'listParkingTypes']);
+Route::get('/find-hourly-parking', [ParkingController::class, 'findHourlyParking'])->middleware('auth:sanctum');
+Route::get('/find-airport-parking', [ParkingController::class, 'findAirportParking'])->middleware('auth:sanctum');
+Route::get('/parking-space/{id}', [ParkingController::class, 'getParkingSpace'])->middleware('auth:sanctum');
+Route::get('/parking-types', [ParkingController::class, 'listParkingTypes'])->middleware('auth:sanctum');
 
 //reservation
 // Route::get('/user-reservations', [ReservationController::class, 'listUserReservations'])->middleware('auth:sanctum');

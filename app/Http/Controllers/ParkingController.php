@@ -21,10 +21,13 @@ use App\Models\ReviewAspectRating;
 use App\Models\User;
 use Illuminate\Support\Facades\Gate;
 use App\Http\helpers\Helper;
+
 class ParkingController extends Controller
 {
     public function createParkingSpace(Request $request)
     {
+
+
         try {
             // Validate the request
             $validated = $request->validate([
@@ -44,12 +47,13 @@ class ParkingController extends Controller
                 'how_to_redeem' => 'nullable|string',
                 'pictures' => 'nullable|array',
                 'pictures.*.image_base64' => 'nullable|string',
+                'close_by_airport' => 'nullable|string' // Add this line
             ]);
+            // dd($request);
             // Determine if updating or creating
             if ($request->has('id') && $request->id) {
                 // Updating existing parking space
                 $parkingSpace = ParkingSpace::findOrFail($request->id);
-                // dd($request);
                 $parkingSpace->update([
                     'latitude' => $validated['latitude'],
                     'longitude' => $validated['longitude'],
@@ -63,12 +67,11 @@ class ParkingController extends Controller
                     'access_hours' => json_encode($validated['access_hours'] ?? []),
                     'things_to_know' => $validated['things_to_know'] ?? '',
                     'how_to_redeem' => $validated['how_to_redeem'] ?? '',
+                    'close_by_airport' => $validated['close_by_airport'],
                 ]);
 
                 // Remove existing images and replace with new ones
                 $parkingSpace->pictures()->delete();
-
-
             } else {
                 // Creating new parking space
                 $parkingSpace = ParkingSpace::create([
@@ -85,6 +88,7 @@ class ParkingController extends Controller
                     'access_hours' => json_encode($validated['access_hours'] ?? []),
                     'things_to_know' => $validated['things_to_know'] ?? '',
                     'how_to_redeem' => $validated['how_to_redeem'] ?? '',
+                    'close_by_airport' => $validated['close_by_airport'],
                     'rating' => 0,
                 ]);
             }
@@ -131,7 +135,6 @@ class ParkingController extends Controller
                                 'parking_space_id' => $parkingSpace->id,
                                 'image_base64' => $base64,
                             ]);
-
                         }
                     }
                     // ParkingSpacePicture::create([
@@ -142,7 +145,7 @@ class ParkingController extends Controller
                 Helper::recordAuditLog(
                     'Create|Update',
                     'parkingSpace',
-                     $request->id,
+                    $request->id,
                     null,
                     ['admin_user_id' => Auth::id()]
                 );
@@ -199,8 +202,9 @@ class ParkingController extends Controller
         }
     }
 
-    public function findParking(Request $request)
+    public function findHourlyParking(Request $request)
     {
+      //  dd($request);
         // Validate the incoming request
         $validated = $request->validate([
             'type' => ['required', 'numeric', 'max:255'], // hourly, monthly, or airport
@@ -209,7 +213,7 @@ class ParkingController extends Controller
             'start_time' => 'required|string', // e.g., 2024-02-03 10:00:00
             'end_time' => 'required|string|after:start_time', // e.g., 2024-02-03 12:00:00
         ]);
-
+        //dd($validated);
         try {
             // Retrieve the necessary data from the validated input
             $type = $validated['type'];
@@ -217,17 +221,17 @@ class ParkingController extends Controller
             $longitude = $validated['longitude'];
             $start_time = $validated['start_time'];
             $end_time = $validated['end_time'];
-
+          //  dd($request);
             // Define the radius (in kilometers) for the search
             $radius = 50;
 
             // Calculate the bounding box for the query
             $boundingBox = $this->calculateBoundingBox($latitude, $longitude, $radius);
-           // dd($boundingBox);
+            // dd($boundingBox);
             // Query to find nearby parking spaces with required conditions
-            $nearbyParkingSpaces = ParkingSpace::with(['pictures', 'prices' => function($query) use ($type) {
-                    $query->where('parking_type_id', $type);
-                }])
+            $nearbyParkingSpaces = ParkingSpace::with(['pictures', 'prices', 'types' => function ($query) use ($type) {
+                $query->where('parking_type_id', $type);
+            }])
                 ->selectRaw("
                     *,
                     (6371 * acos(
@@ -250,7 +254,7 @@ class ParkingController extends Controller
                     });
                 })
                 ->get();
-               // dd($nearbyParkingSpaces);
+           // dd($nearbyParkingSpaces);
             // Return the result as JSON response
             return response()->json($nearbyParkingSpaces);
         } catch (ValidationException $e) {
@@ -262,6 +266,45 @@ class ParkingController extends Controller
         }
     }
 
+    public function findAirportParking(Request $request)
+    {
+        // Validate the incoming request
+        $validated = $request->validate([
+            'airport_name' => 'required|string|max:255',
+            'start_time' => 'required|string', // e.g., 2024-02-03 10:00:00
+            'end_time' => 'required|string|after:start_time', // e.g., 2024-02-03 12:00:00
+        ]);
+        //dd($validated);
+        try {
+            // Retrieve the necessary data from the validated input
+            $airportName = $validated['airport_name'];
+            $start_time = $validated['start_time'];
+            $end_time = $validated['end_time'];
+
+            // Define the radius (in kilometers) for the search, if needed
+            $radius = 50;
+
+            // Query to find parking spaces near the specified airport with required conditions
+            $nearbyParkingSpaces = ParkingSpace::with(['pictures', 'prices', 'types'])
+                ->where('close_by_airport', 'LIKE', "%{$airportName}%")
+                ->whereDoesntHave('reservations', function ($query) use ($start_time, $end_time) {
+                    $query->where(function ($query) use ($start_time, $end_time) {
+                        $query->whereBetween('start_time', [$start_time, $end_time])
+                            ->orWhereBetween('end_time', [$start_time, $end_time]);
+                    });
+                })
+                ->get();
+
+            // Return the result as JSON response
+            return response()->json($nearbyParkingSpaces);
+        } catch (ValidationException $e) {
+            // Return validation error response
+            return response()->json(['message' => 'Validation failed', 'errors' => $e->errors()], 422);
+        } catch (\Exception $e) {
+            // Handle other exceptions and return an appropriate response
+            return response()->json(['message' => 'Server error', 'error' => $e->getMessage()], 500);
+        }
+    }
 
 
     private function calculateBoundingBox($latitude, $longitude, $radius)
@@ -409,5 +452,4 @@ class ParkingController extends Controller
             return response()->json(['message' => 'Server error', 'error' => $e->getMessage()], 500);
         }
     }
-
 }

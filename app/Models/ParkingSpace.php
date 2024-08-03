@@ -12,7 +12,7 @@ class ParkingSpace extends Model
     use SoftDeletes;
 
     protected $fillable = [
-        'user_id', 'type', 'latitude', 'longitude', 'address', 'description',
+        'user_id', 'type','close_by_airport', 'latitude', 'longitude', 'address', 'description',
         'capacity', 'contact_info', 'amenities', 'rating','pre_approval_required',
         'cancellation_policy', 'access_hours', 'things_to_know', 'how_to_redeem'
     ];

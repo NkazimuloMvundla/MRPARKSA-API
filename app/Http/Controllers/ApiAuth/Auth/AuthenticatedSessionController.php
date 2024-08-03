@@ -18,6 +18,8 @@ class AuthenticatedSessionController extends Controller
      */
     public function store(LoginRequest $request): JsonResponse
     {
+       /// dd($request);
+
         try {
             $request->authenticate();
 
@@ -32,9 +34,11 @@ class AuthenticatedSessionController extends Controller
                 'account_type' => $user->account_type
             ], 201);
         } catch (ValidationException $e) {
-            return response()->json([
-                'message' => $e->getMessage(), // Use the error message from the exception
-            ], 401);
+            // Return validation error response
+            return response()->json(['message' => 'These credentials do not match our records', 'errors' => $e->errors()], 422);
+        } catch (\Exception $e) {
+            // Handle other exceptions and return an appropriate response
+            return response()->json(['message' => 'Server error', 'error' => $e->getMessage()], 500);
         }
     }
 
