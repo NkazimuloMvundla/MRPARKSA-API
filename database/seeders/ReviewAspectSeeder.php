@@ -10,9 +10,9 @@ class ReviewAspectSeeder extends Seeder
     public function run()
     {
         $aspects = [
-            'Safety',
-            'Ease of Finding',
-            'Size',
+            'safety',
+            'ease_of_finding',
+            'size',
         ];
 
         foreach ($aspects as $aspect) {

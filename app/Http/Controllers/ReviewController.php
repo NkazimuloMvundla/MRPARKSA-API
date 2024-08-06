@@ -19,6 +19,7 @@ use App\Models\Review;
 use App\Models\ReviewAspect;
 use App\Models\ReviewAspectRating;
 use App\Models\User;
+
 class ReviewController extends Controller
 {
     // List reviews for a specific parking space
@@ -28,33 +29,36 @@ class ReviewController extends Controller
         return response()->json($reviews);
     }
 
-    // List reviews submitted by the authenticated user
-    public function listUserReviews()
+    public function listUserReviews($parking_space_id)
     {
         $userId = Auth::id();
-        $reviews = Review::where('user_id', $userId)->with('parkingSpace')->get();
+        $reviews = Review::where('user_id', $userId)
+            ->where('parking_space_id', $parking_space_id)
+            ->with(['parkingSpace', 'aspectRatings']) // Make sure to include aspectRatings
+            ->get();
         return response()->json($reviews);
     }
 
+
     public function submitReview(Request $request)
     {
-      //  dd($request);
-      $users = User::all();
+        // Use a fake ID for user since Auth is not configured
+        $userId = Auth::id(); // Get the authenticated user's ID
+
         try {
+            // Validate the request
             $validated = $request->validate([
-                // 'user_id' => 'required|exists:parking_spaces,id',
                 'parking_space_id' => 'required|exists:parking_spaces,id',
                 'comment' => 'required|string',
                 'star_rating' => 'required|integer|between:1,5',
                 'aspect_ratings' => 'required|array',
-                'aspect_ratings.safety' => 'required|integer|between:1,5',
-                'aspect_ratings.Ease of Finding' => 'required|integer|between:1,5',
-                'aspect_ratings.size' => 'required|integer|between:1,5',
+                'aspect_ratings.*.review_aspect_id' => 'required|integer|in:1,2,3', // Validate review_aspect_id
+                'aspect_ratings.*.percentage' => 'required|integer|between:1,5',
             ]);
-
+            //dont create if user has comment on this specif space, just update dont create new record as it is
             // Create the review
             $review = Review::create([
-                'user_id' => User::first()->id, // we not auth so this wont work. you must add the middleware for this to work, for now use FAKE ID 5
+                'user_id' => $userId, // Use the authenticated user's ID
                 'parking_space_id' => $validated['parking_space_id'],
                 'comment' => $validated['comment'],
                 'star_rating' => $validated['star_rating'],
@@ -62,26 +66,21 @@ class ReviewController extends Controller
 
             // Get the aspect ratings
             $aspectRatings = $validated['aspect_ratings'];
+
             // Create the aspect ratings
-            foreach ($aspectRatings as $aspect => $rating) {
-                $aspectName = ucfirst($aspect);
-                $aspectRecord = ReviewAspect::where('name', $aspectName)->first();
+            foreach ($aspectRatings as $aspectRating) {
+                // $aspectRating is an associative array with 'review_aspect_id' and 'percentage'
+                $reviewAspectId = $aspectRating['review_aspect_id'];
+                $percentage = $aspectRating['percentage'];
 
-                if (!$aspectRecord) {
-                    return response()->json([
-                        'message' => "Aspect '{$aspectName}' not found."
-                    ], 400); // 400 Bad Request
-                }
-
-              ReviewAspectRating::create([
+                ReviewAspectRating::create([
                     'review_id' => $review->id,
-                    'review_aspect_id' => $aspectRecord->id,
-                    'percentage' => $rating * 20, // Convert star rating (1-5) to percentage (0-100)
-              ]);
+                    'review_aspect_id' => $reviewAspectId,
+                    'percentage' => $percentage
+                ]);
             }
 
             return response()->json(['message' => 'Review submitted successfully'], 201);
-
         } catch (ValidationException $e) {
             // Handle validation exceptions
             return response()->json(['message' => 'Validation failed', 'errors' => $e->errors()], 422);

@@ -77,8 +77,8 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 //reviews
 Route::get('/parking-space/{id}/reviews', [ReviewController::class, 'listReviews']);
-Route::get('/user-reviews', [ReviewController::class, 'listUserReviews'])->middleware('auth:sanctum');
-Route::post('/submit-review', [ParkingController::class, 'submitReview']);
+Route::get('/user-reviews/{parkingSpaceId}', [ReviewController::class, 'listUserReviews'])->middleware('auth:sanctum');
+Route::post('/submit-review', [ReviewController::class, 'submitReview'])->middleware('auth:sanctum');
 
 //ADMIN-parking-routes
 Route::post('/create-parking-space', [ParkingController::class, 'createParkingSpace'])->middleware('auth:sanctum');

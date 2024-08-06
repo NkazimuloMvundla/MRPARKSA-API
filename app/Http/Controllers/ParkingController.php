@@ -204,7 +204,6 @@ class ParkingController extends Controller
 
     public function findHourlyParking(Request $request)
     {
-      //  dd($request);
         // Validate the incoming request
         $validated = $request->validate([
             'type' => ['required', 'numeric', 'max:255'], // hourly, monthly, or airport
@@ -213,7 +212,7 @@ class ParkingController extends Controller
             'start_time' => 'required|string', // e.g., 2024-02-03 10:00:00
             'end_time' => 'required|string|after:start_time', // e.g., 2024-02-03 12:00:00
         ]);
-        //dd($validated);
+
         try {
             // Retrieve the necessary data from the validated input
             $type = $validated['type'];
@@ -221,16 +220,18 @@ class ParkingController extends Controller
             $longitude = $validated['longitude'];
             $start_time = $validated['start_time'];
             $end_time = $validated['end_time'];
-          //  dd($request);
+
             // Define the radius (in kilometers) for the search
             $radius = 50;
 
             // Calculate the bounding box for the query
             $boundingBox = $this->calculateBoundingBox($latitude, $longitude, $radius);
-            // dd($boundingBox);
+
             // Query to find nearby parking spaces with required conditions
-            $nearbyParkingSpaces = ParkingSpace::with(['pictures', 'prices', 'types' => function ($query) use ($type) {
-                $query->where('parking_type_id', $type);
+            $nearbyParkingSpaces = ParkingSpace::with(['pictures', 'prices' => function($query) {
+                $query->where('parking_type_id', 1); // Filter pricing for hourly type (ID 1)
+            }, 'types' => function ($query) use ($type) {
+                $query->where('parking_type_id', 1); // Ensure types include hourly type (ID 1)
             }])
                 ->selectRaw("
                     *,
@@ -247,6 +248,9 @@ class ParkingController extends Controller
                 ->whereHas('types', function ($query) use ($type) {
                     $query->where('parking_space_types.parking_type_id', $type);
                 })
+                ->whereHas('prices', function ($query) {
+                    $query->where('parking_type_id', 1); // Ensure there's a price for hourly type (ID 1)
+                })
                 ->whereDoesntHave('reservations', function ($query) use ($start_time, $end_time) {
                     $query->where(function ($query) use ($start_time, $end_time) {
                         $query->whereBetween('start_time', [$start_time, $end_time])
@@ -254,7 +258,7 @@ class ParkingController extends Controller
                     });
                 })
                 ->get();
-           // dd($nearbyParkingSpaces);
+
             // Return the result as JSON response
             return response()->json($nearbyParkingSpaces);
         } catch (ValidationException $e) {
@@ -266,6 +270,7 @@ class ParkingController extends Controller
         }
     }
 
+
     public function findAirportParking(Request $request)
     {
         // Validate the incoming request
@@ -274,7 +279,7 @@ class ParkingController extends Controller
             'start_time' => 'required|string', // e.g., 2024-02-03 10:00:00
             'end_time' => 'required|string|after:start_time', // e.g., 2024-02-03 12:00:00
         ]);
-        //dd($validated);
+
         try {
             // Retrieve the necessary data from the validated input
             $airportName = $validated['airport_name'];
@@ -285,8 +290,13 @@ class ParkingController extends Controller
             $radius = 50;
 
             // Query to find parking spaces near the specified airport with required conditions
-            $nearbyParkingSpaces = ParkingSpace::with(['pictures', 'prices', 'types'])
+            $nearbyParkingSpaces = ParkingSpace::with(['pictures', 'prices' => function($query) {
+                $query->where('parking_type_id', 3); // Filter pricing for airport type (ID 3)
+            }, 'types'])
                 ->where('close_by_airport', 'LIKE', "%{$airportName}%")
+                ->whereHas('prices', function($query) {
+                    $query->where('parking_type_id', 3); // Ensure there's a price for airport type (ID 3)
+                })
                 ->whereDoesntHave('reservations', function ($query) use ($start_time, $end_time) {
                     $query->where(function ($query) use ($start_time, $end_time) {
                         $query->whereBetween('start_time', [$start_time, $end_time])
@@ -305,6 +315,8 @@ class ParkingController extends Controller
             return response()->json(['message' => 'Server error', 'error' => $e->getMessage()], 500);
         }
     }
+
+
 
 
     private function calculateBoundingBox($latitude, $longitude, $radius)
