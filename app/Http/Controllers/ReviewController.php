@@ -55,14 +55,30 @@ class ReviewController extends Controller
                 'aspect_ratings.*.review_aspect_id' => 'required|integer|in:1,2,3', // Validate review_aspect_id
                 'aspect_ratings.*.percentage' => 'required|integer|between:1,5',
             ]);
-            //dont create if user has comment on this specif space, just update dont create new record as it is
-            // Create the review
-            $review = Review::create([
-                'user_id' => $userId, // Use the authenticated user's ID
-                'parking_space_id' => $validated['parking_space_id'],
-                'comment' => $validated['comment'],
-                'star_rating' => $validated['star_rating'],
-            ]);
+
+            // Check if the user already has a review for this parking space
+            $review = Review::where('user_id', $userId)
+                ->where('parking_space_id', $validated['parking_space_id'])
+                ->first();
+
+            if ($review) {
+                // Update the existing review
+                $review->update([
+                    'comment' => $validated['comment'],
+                    'star_rating' => $validated['star_rating'],
+                ]);
+
+                // Delete existing aspect ratings for this review
+                ReviewAspectRating::where('review_id', $review->id)->delete();
+            } else {
+                // Create a new review
+                $review = Review::create([
+                    'user_id' => $userId, // Use the authenticated user's ID
+                    'parking_space_id' => $validated['parking_space_id'],
+                    'comment' => $validated['comment'],
+                    'star_rating' => $validated['star_rating'],
+                ]);
+            }
 
             // Get the aspect ratings
             $aspectRatings = $validated['aspect_ratings'];
