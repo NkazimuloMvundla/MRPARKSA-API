@@ -12,8 +12,8 @@ class ParkingSpace extends Model
     use SoftDeletes;
 
     protected $fillable = [
-        'user_id', 'type','close_by_airport', 'latitude', 'longitude', 'address', 'description',
-        'capacity', 'contact_info', 'amenities', 'rating','pre_approval_required',
+        'user_id', 'type', 'close_by_airport', 'latitude', 'longitude', 'address', 'description',
+        'capacity', 'contact_info', 'amenities', 'rating', 'pre_approval_required',
         'cancellation_policy', 'access_hours', 'things_to_know', 'how_to_redeem'
     ];
 
@@ -38,33 +38,37 @@ class ParkingSpace extends Model
     {
         return $this->hasMany(Reservation::class);
     }
-
+    // Add this relationship
+    public function reviews()
+    {
+        return $this->hasMany(Review::class);
+    }
     public function types()
     {
         return $this->belongsToMany(ParkingType::class, 'parking_space_types');
     }
 
-     // Existing relationships
+    // Existing relationships
 
-     public function admins()
-     {
-         return $this->belongsToMany(User::class, 'parking_space_admins');
-     }
+    public function admins()
+    {
+        return $this->belongsToMany(User::class, 'parking_space_admins');
+    }
 
-     public function parkingSpaceAdmins()
-     {
-         return $this->hasMany(ParkingSpaceAdmin::class);
-     }
+    public function parkingSpaceAdmins()
+    {
+        return $this->hasMany(ParkingSpaceAdmin::class);
+    }
 
 
-     public function prices()
-     {
-         return $this->hasMany(ParkingSpacePrice::class);
-     }
+    public function prices()
+    {
+        return $this->hasMany(ParkingSpacePrice::class);
+    }
 
-     public function getRedeemStepsAttribute()
-     {
-         $redeemSteps = json_decode($this->attributes['how_to_redeem'], true);
-         return is_array($redeemSteps) ? $redeemSteps : [$this->attributes['how_to_redeem']];
-     }
+    public function getRedeemStepsAttribute()
+    {
+        $redeemSteps = json_decode($this->attributes['how_to_redeem'], true);
+        return is_array($redeemSteps) ? $redeemSteps : [$this->attributes['how_to_redeem']];
+    }
 }

@@ -47,8 +47,8 @@ class ReviewSeeder extends Seeder
 
             // Create the review
             $review = Review::create([
-                'user_id' => $user->id,
-                'parking_space_id' => $parkingSpace->id,
+                'user_id' => 2,
+                'parking_space_id' => 1,
                 'comment' => $reviewData['comment'],
                 'star_rating' => $reviewData['star_rating'],
             ]);
@@ -59,7 +59,7 @@ class ReviewSeeder extends Seeder
                 ReviewAspectRating::create([
                     'review_id' => $review->id,
                     'review_aspect_id' => $aspect->id,
-                    'percentage' => ($rating / 5) * 100, // Convert star rating to percentage
+                    'percentage' => 3, // Convert star rating to percentage
                 ]);
             }
         }
