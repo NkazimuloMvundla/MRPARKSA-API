@@ -17,7 +17,10 @@ class Reservation extends Model
         'start_time',
         'end_time',
         'price',
-        'status'
+        'status',
+        'vehicle_license_number',
+        'vehicle_size',
+        'confirmation_number'
     ];
 
     public function user()

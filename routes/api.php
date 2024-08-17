@@ -66,7 +66,8 @@ Route::get('/find-hourly-parking', [ParkingController::class, 'findHourlyParking
 Route::get('/find-airport-parking', [ParkingController::class, 'findAirportParking'])->middleware('auth:sanctum');
 Route::get('/parking-space/{id}', [ParkingController::class, 'getParkingSpace'])->middleware('auth:sanctum');
 Route::get('/parking-types', [ParkingController::class, 'listParkingTypes'])->middleware('auth:sanctum');
-
+Route::get('/check-availability', [ParkingController::class, 'checkAvailability']);
+Route::post('/make-reservation', [ReservationController::class, 'makeReservation'])->middleware('auth:sanctum');
 //reservation
 // Route::get('/user-reservations', [ReservationController::class, 'listUserReservations'])->middleware('auth:sanctum');
 // Route::delete('/cancel-reservation/{id}', [ReservationController::class, 'cancelReservation'])->middleware('auth:sanctum');

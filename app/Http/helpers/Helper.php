@@ -1,10 +1,12 @@
 <?php
+
 namespace App\Http\helpers;
 
 
 use App\Models\AuditLog;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Request;
+use Illuminate\Support\Str;
 
 class Helper
 {
@@ -22,4 +24,8 @@ class Helper
         ]);
     }
 
+    public static function generateConfirmationNumber()
+    {
+        return strtoupper(Str::random(10)); // Generates a random string of 10 characters
+    }
 }

@@ -17,6 +17,12 @@ class ReviewSeeder extends Seeder
         $parkingSpaces = ParkingSpace::all();
         $users = User::all();
 
+        // Check if we have users and parking spaces to work with
+        if ($parkingSpaces->isEmpty() || $users->isEmpty()) {
+            $this->command->info('No parking spaces or users found, seeder will not run.');
+            return;
+        }
+
         // Define some example reviews
         $reviews = [
             [
@@ -47,20 +53,23 @@ class ReviewSeeder extends Seeder
 
             // Create the review
             $review = Review::create([
-                'user_id' => 2,
-                'parking_space_id' => 1,
+                'user_id' => $user->id,
+                'parking_space_id' => $parkingSpace->id,
                 'comment' => $reviewData['comment'],
                 'star_rating' => $reviewData['star_rating'],
             ]);
 
-            // // Create the aspect ratings
+            // Create the aspect ratings
             foreach ($reviewData['aspect_ratings'] as $aspectName => $rating) {
                 $aspect = ReviewAspect::where('name', ucfirst($aspectName))->first();
-                ReviewAspectRating::create([
-                    'review_id' => $review->id,
-                    'review_aspect_id' => $aspect->id,
-                    'percentage' => 3, // Convert star rating to percentage
-                ]);
+
+                if ($aspect) {
+                    ReviewAspectRating::create([
+                        'review_id' => $review->id,
+                        'review_aspect_id' => $aspect->id,
+                        'percentage' => $rating * 20, // Convert star rating to percentage
+                    ]);
+                }
             }
         }
     }
