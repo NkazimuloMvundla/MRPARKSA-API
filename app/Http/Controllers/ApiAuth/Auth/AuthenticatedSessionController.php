@@ -18,15 +18,16 @@ class AuthenticatedSessionController extends Controller
      */
     public function store(LoginRequest $request): JsonResponse
     {
-       /// dd($request);
+      //dd($request);
 
         try {
             $request->authenticate();
 
             $user = User::where('email', $request->email)->first();
-           // dd($user);
+            //dd($user);
             //before an admin can change anything, check if they have enough rights, check if thier  userId exist on that specifi space
             $token = $request->user()->createToken('api-token')->plainTextToken;
+           // dd($token);
             return response()->json([
                 'access_token' => $token,
                 'token_type' => 'Bearer',

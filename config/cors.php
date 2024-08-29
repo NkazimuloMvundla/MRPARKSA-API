@@ -25,7 +25,7 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => [env('FRONTEND_URL', 'http://localhost:8100')],
+    'allowed_origins' => [env('FRONTEND_URL', 'http://localhost:8100'),'http://localhost', 'http://192.168.0.179'],
 
     'allowed_origins_patterns' => [],
 
