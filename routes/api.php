@@ -89,7 +89,7 @@ Route::get('/getMyParkingSpaces', [ParkingController::class, 'getMyParkingSpaces
 Route::put('/approve-reservation/{id}', [ReservationController::class, 'approveReservation'])->middleware('auth:sanctum');
 Route::put('/reject-reservation/{id}', [ReservationController::class, 'rejectReservation'])->middleware('auth:sanctum');
 Route::post('/add-admin', [ParkingController::class, 'addAdmin'])->middleware('auth:sanctum');
-Route::put('/update-pricing', [ParkingController::class, 'updatePricing'])->middleware('auth:sanctum');
+Route::post('/update-pricing', [ParkingController::class, 'updatePricing'])->middleware('auth:sanctum');
 
 // routes/web.php or routes/api.php
 Route::post('/assign-admin', [ParkingController::class, 'assignAdmin']);

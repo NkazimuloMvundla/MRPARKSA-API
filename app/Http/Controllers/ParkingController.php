@@ -173,10 +173,8 @@ class ParkingController extends Controller
             'prices.*.price' => 'required|numeric',
         ]);
 
-        // dd($request);
-
         try {
-            // Process each price entry and insert into the pricing table
+            // Process each price entry and insert/update into the pricing table
             foreach ($request->prices as $priceData) {
                 ParkingSpacePrice::updateOrCreate(
                     [
@@ -187,6 +185,7 @@ class ParkingController extends Controller
                         'price' => $priceData['price'],
                     ]
                 );
+
                 Helper::recordAuditLog(
                     'Create|Update',
                     'Pricing',
@@ -196,7 +195,8 @@ class ParkingController extends Controller
                 );
             }
 
-            return response()->json(['message' => 'Pricing updated successfully'], 200);
+            // Return the request data in the response
+            return response()->json(['message' => 'Pricing updated successfully', 'request_data' => $request->all()], 200);
         } catch (\Exception $e) {
             // Handle any exceptions or errors
             return response()->json(['message' => 'Failed to update pricing', 'error' => $e->getMessage()], 500);
@@ -209,16 +209,39 @@ class ParkingController extends Controller
             'type' => ['required', 'numeric', 'max:255'],
             'latitude' => 'required|numeric',
             'longitude' => 'required|numeric',
-            'start_time' => 'required|string',
-            'end_time' => 'required|string|after:start_time',
+            'start_time' => 'required|date',
+            'end_time' => 'required|date|after:start_time',
         ]);
 
+        // Additional custom validations
+        $start_time = Carbon::parse($validated['start_time']);
+        $end_time = Carbon::parse($validated['end_time']);
+        $now = Carbon::now('Africa/Johannesburg');
+        //dd($now);
+        // Validate that start_time and end_time are not in the past
+        if ($start_time->lessThan($now)) {
+            return response()->json(['message' => 'Start time cannot be in the past.'], 422);
+        }
+        if ($end_time->lessThan($now)) {
+            return response()->json(['message' => 'End time cannot be in the past.'], 422);
+        }
+        // Custom validation to ensure the difference is in full hours or full minutes
+        $diffInSeconds = $start_time->diffInSeconds($end_time);
+
+        // Check if the difference is not a multiple of 60 seconds (1 minute)
+        if ($diffInSeconds % 60 !== 0) {
+            return response()->json(['message' => 'The time difference between start and end time must be in full hours or full minutes.'], 422);
+        }
         try {
             $type = $validated['type'];
             $latitude = $validated['latitude'];
             $longitude = $validated['longitude'];
-            $start_time = Carbon::parse($validated['start_time']); // Parse ISO 8601 datetime
-            $end_time = Carbon::parse($validated['end_time']);     // Parse ISO 8601 datetime
+
+            // Calculate duration in minutes
+            $durationMinutes = $start_time->diffInMinutes($end_time);
+
+            // Round up to the nearest hour
+            $durationHours = ceil($durationMinutes / 60);
 
             $radius = 50;
             $boundingBox = $this->calculateBoundingBox($latitude, $longitude, $radius);
@@ -226,24 +249,24 @@ class ParkingController extends Controller
             $nearbyParkingSpaces = ParkingSpace::with([
                 'pictures',
                 'prices' => function ($query) {
-                    $query->where('parking_type_id', 1);
+                    $query->where('parking_type_id', 1); // Ensure the price is for the correct parking type
                 },
                 'types' => function ($query) use ($type) {
-                    $query->where('parking_type_id', 1);
+                    $query->where('parking_type_id', $type);
                 },
                 'reviews' => function ($query) {
                     $query->with('aspectRatings'); // Include aspect ratings for reviews
                 }
             ])
                 ->selectRaw("
-                    *,
-                    (6371 * acos(
-                        cos(radians($latitude)) *
-                        cos(radians(latitude)) *
-                        cos(radians(longitude) - radians($longitude)) +
-                        sin(radians($latitude)) *
-                        sin(radians(latitude))
-                    )) AS distance")
+                *,
+                (6371 * acos(
+                    cos(radians($latitude)) *
+                    cos(radians(latitude)) *
+                    cos(radians(longitude) - radians($longitude)) +
+                    sin(radians($latitude)) *
+                    sin(radians(latitude))
+                )) AS distance")
                 ->having('distance', '<', $radius)
                 ->whereBetween('latitude', [$boundingBox['min_lat'], $boundingBox['max_lat']])
                 ->whereBetween('longitude', [$boundingBox['min_lng'], $boundingBox['max_lng']])
@@ -261,6 +284,14 @@ class ParkingController extends Controller
                 })
                 ->get();
 
+            // Modify the price based on the duration and update the existing price in the array
+            $nearbyParkingSpaces->each(function ($space) use ($durationHours) {
+                $priceRecord = $space->prices->first(); // Get the first price record related to the parking type
+                if ($priceRecord) {
+                    $priceRecord->price = $priceRecord->price * $durationHours; // Update the price directly
+                }
+            });
+
             return response()->json($nearbyParkingSpaces);
         } catch (ValidationException $e) {
             return response()->json(['message' => 'Validation failed', 'errors' => $e->errors()], 422);
@@ -271,13 +302,81 @@ class ParkingController extends Controller
 
 
 
+    // public function findHourlyParking(Request $request)
+    // {
+    //     $validated = $request->validate([
+    //         'type' => ['required', 'numeric', 'max:255'],
+    //         'latitude' => 'required|numeric',
+    //         'longitude' => 'required|numeric',
+    //         'start_time' => 'required|string',
+    //         'end_time' => 'required|string|after:start_time',
+    //     ]);
+    //     dd($validated);
+    //     try {
+    //         $type = $validated['type'];
+    //         $latitude = $validated['latitude'];
+    //         $longitude = $validated['longitude'];
+    //         $start_time = Carbon::parse($validated['start_time']); // Parse ISO 8601 datetime
+    //         $end_time = Carbon::parse($validated['end_time']);     // Parse ISO 8601 datetime
+
+    //         $radius = 50;
+    //         $boundingBox = $this->calculateBoundingBox($latitude, $longitude, $radius);
+
+    //         $nearbyParkingSpaces = ParkingSpace::with([
+    //             'pictures',
+    //             'prices' => function ($query) {
+    //                 $query->where('parking_type_id', 1);
+    //             },
+    //             'types' => function ($query) use ($type) {
+    //                 $query->where('parking_type_id', 1);
+    //             },
+    //             'reviews' => function ($query) {
+    //                 $query->with('aspectRatings'); // Include aspect ratings for reviews
+    //             }
+    //         ])
+    //             ->selectRaw("
+    //                 *,
+    //                 (6371 * acos(
+    //                     cos(radians($latitude)) *
+    //                     cos(radians(latitude)) *
+    //                     cos(radians(longitude) - radians($longitude)) +
+    //                     sin(radians($latitude)) *
+    //                     sin(radians(latitude))
+    //                 )) AS distance")
+    //             ->having('distance', '<', $radius)
+    //             ->whereBetween('latitude', [$boundingBox['min_lat'], $boundingBox['max_lat']])
+    //             ->whereBetween('longitude', [$boundingBox['min_lng'], $boundingBox['max_lng']])
+    //             ->whereHas('types', function ($query) use ($type) {
+    //                 $query->where('parking_space_types.parking_type_id', $type);
+    //             })
+    //             ->whereHas('prices', function ($query) {
+    //                 $query->where('parking_type_id', 1);
+    //             })
+    //             ->whereDoesntHave('reservations', function ($query) use ($start_time, $end_time) {
+    //                 $query->where(function ($query) use ($start_time, $end_time) {
+    //                     $query->where('start_time', '<', $end_time)
+    //                         ->where('end_time', '>', $start_time);
+    //                 });
+    //             })
+    //             ->get();
+
+    //         return response()->json($nearbyParkingSpaces);
+    //     } catch (ValidationException $e) {
+    //         return response()->json(['message' => 'Validation failed', 'errors' => $e->errors()], 422);
+    //     } catch (\Exception $e) {
+    //         return response()->json(['message' => 'Server error', 'error' => $e->getMessage()], 500);
+    //     }
+    // }
+
+
+
     public function findAirportParking(Request $request)
     {
         // Validate the incoming request
         $validated = $request->validate([
             'airport_name' => 'required|string|max:255',
-            'start_time' => 'required|string', // e.g., 2024-02-03 10:00:00
-            'end_time' => 'required|string|after:start_time', // e.g., 2024-02-03 12:00:00
+            'start_time' => 'required|date', // Changed from 'string' to 'date' for better validation
+            'end_time' => 'required|date|after:start_time',
         ]);
 
         try {
@@ -285,6 +384,30 @@ class ParkingController extends Controller
             $airportName = $validated['airport_name'];
             $start_time = Carbon::parse($validated['start_time']);
             $end_time = Carbon::parse($validated['end_time']);
+            $now = Carbon::now('Africa/Johannesburg');
+            // dd($start_time);
+            // dd($now);
+            // Validate that start_time and end_time are not in the past
+            if ($start_time->lessThan($now)) {
+                return response()->json(['message' => 'Start time cannot be in the past.'], 422);
+            }
+            if ($end_time->lessThan($now)) {
+                return response()->json(['message' => 'End time cannot be in the past.'], 422);
+            }
+
+            // Custom validation to ensure the difference is in full hours or full minutes
+            $diffInSeconds = $start_time->diffInSeconds($end_time);
+
+            // Check if the difference is not a multiple of 60 seconds (1 minute)
+            if ($diffInSeconds % 60 !== 0) {
+                return response()->json(['message' => 'The time difference between start and end time must be in full hours or full minutes.'], 422);
+            }
+
+            // Calculate duration in minutes
+            $durationMinutes = $start_time->diffInMinutes($end_time);
+
+            // Round up to the nearest hour
+            $durationHours = ceil($durationMinutes / 60);
 
             // Define the radius (in kilometers) for the search, if needed
             $radius = 50;
@@ -304,13 +427,22 @@ class ParkingController extends Controller
                 ->whereDoesntHave('reservations', function ($query) use ($start_time, $end_time) {
                     $query->where(function ($query) use ($start_time, $end_time) {
                         $query->where('start_time', '<', $end_time)
-                            ->where('end_time', '>', $start_time);
+                              ->where('end_time', '>', $start_time);
                     });
                 })
                 ->get();
 
+            // Modify the price based on the duration and update the existing price in the array
+            $nearbyParkingSpaces->each(function ($space) use ($durationHours) {
+                $priceRecord = $space->prices->first(); // Get the first price record related to the parking type
+                if ($priceRecord) {
+                    $priceRecord->price = $priceRecord->price * $durationHours; // Update the price directly
+                }
+            });
+
             // Return the result as JSON response
             return response()->json($nearbyParkingSpaces);
+
         } catch (ValidationException $e) {
             // Return validation error response
             return response()->json(['message' => 'Validation failed', 'errors' => $e->errors()], 422);
@@ -319,6 +451,7 @@ class ParkingController extends Controller
             return response()->json(['message' => 'Server error', 'error' => $e->getMessage()], 500);
         }
     }
+
 
 
 
@@ -344,7 +477,7 @@ class ParkingController extends Controller
                     // Check if the requested start time is before an existing reservation's end time
                     // and if the requested end time is after an existing reservation's start time
                     $query->where('start_time', '<', $request->end_time)
-                          ->where('end_time', '>', $request->start_time);
+                        ->where('end_time', '>', $request->start_time);
                 });
             })
             ->exists();
@@ -388,19 +521,65 @@ class ParkingController extends Controller
 
 
 
-    // Get details of a specific parking space
-    public function getParkingSpace($id)
+    public function getParkingSpace($id,Request $request)
     {
-        $parkingSpace = ParkingSpace::with(['types',
-        'pictures',
-        'reservations',
-        'reviews',
-        'prices' => function ($query) {
-            $query->where('parking_type_id', 1);
-        },
+        //dd($id);
+        // Validate the incoming request
+        $validated = $request->validate([
+            'start_time' => 'required|date',
+            'end_time' => 'required|date|after:start_time',
+            'type' => 'required|string|in:Hourly,Airport',
+        ]);
+       //dd($request);
+        $start_time = Carbon::parse($validated['start_time']);
+        $end_time = Carbon::parse($validated['end_time']);
+        $type = $validated['type'];
+        $now = Carbon::now('Africa/Johannesburg');
+
+        // Validate that start_time and end_time are not in the past
+        if ($start_time->lessThan($now)) {
+            return response()->json(['message' => 'Start time cannot be in the past.'], 422);
+        }
+        if ($end_time->lessThan($now)) {
+            return response()->json(['message' => 'End time cannot be in the past.'], 422);
+        }
+
+        // Custom validation to ensure the difference is in full hours or full minutes
+        $diffInSeconds = $start_time->diffInSeconds($end_time);
+        if ($diffInSeconds % 60 !== 0) {
+            return response()->json(['message' => 'The time difference between start and end time must be in full hours or full minutes.'], 422);
+        }
+
+        // Check if the parking space exists
+        $parkingSpace = ParkingSpace::find($id);
+        if (!$parkingSpace) {
+            return response()->json(['message' => 'Parking space not found'], 404);
+        }
+
+        // Load related data
+        $parkingSpace = ParkingSpace::with([
+            'types',
+            'pictures',
+            'reservations',
+            'reviews',
+            'prices' => function ($query) use ($type) {
+                $parkingTypeId = $type === 'Hourly' ? 1 : 3; // Adjust parking_type_id based on type
+                $query->where('parking_type_id', $parkingTypeId);
+            },
         ])->findOrFail($id);
+          //dd($parkingSpace);
+        // Modify the price based on the duration and type
+        $priceRecord = $parkingSpace->prices->first(); // Get the first price record related to the parking type
+        if ($priceRecord) {
+            $durationMinutes = $start_time->diffInMinutes($end_time);
+            $durationHours = ceil($durationMinutes / 60);
+            $priceRecord->price = $priceRecord->price * $durationHours;
+        }
+
         return response()->json($parkingSpace);
     }
+
+
 
     // Update a specific parking space
     public function updateParkingSpace(Request $request, $id)
