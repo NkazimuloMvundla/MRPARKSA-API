@@ -12,6 +12,7 @@ use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\ReservationController;
 use App\Http\Controllers\ParkingController;
 use App\Http\Controllers\ReviewController;
+use App\Http\Controllers\NotificationController;
 use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
 
 Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
@@ -61,7 +62,7 @@ Route::post('/deleteAllUsers', [RegisteredUserAPIController::class, 'deleteAllUs
 
 
 //user-parking-routes
-
+Route::post('/send-notification', [NotificationController::class, 'sendNotification']);
 Route::get('/find-hourly-parking', [ParkingController::class, 'findHourlyParking'])->middleware('auth:sanctum');
 Route::get('/find-airport-parking', [ParkingController::class, 'findAirportParking'])->middleware('auth:sanctum');
 Route::get('/parking-space/{id}', [ParkingController::class, 'getParkingSpace'])->middleware('auth:sanctum');
