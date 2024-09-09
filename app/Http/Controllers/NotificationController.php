@@ -16,13 +16,26 @@ class NotificationController extends Controller
 
     public function sendNotification(Request $request)
     {
-        $deviceToken = $request->input('device_token');
+        dd("testing...");
+        $deviceTokens = $request->input('device_tokens'); // Expect an array of tokens
         $title = $request->input('title');
         $body = $request->input('body');
         $data = $request->input('data', []);
 
-        $this->firebaseMessaging->sendMessageToDevice($deviceToken, $title, $body, $data);
+        try {
+            foreach ($deviceTokens as $deviceToken) {
+                $this->firebaseMessaging->sendMessageToDevice($deviceToken, $title, $body, $data);
+            }
+            dd($request);
+            return response()->json(['message' => 'Notifications sent successfully']);
+        } catch (\Exception $e) {
+            // Log the exception details
+            //\Log::error('Failed to send notifications: ' . $e->getMessage());
 
-        return response()->json(['message' => 'Notification sent successfully']);
+            // Return a response with an error message
+            return response()->json(['message' => 'Failed to send notifications', 'error' => $e->getMessage()], 500);
+        }
     }
+
+
 }
