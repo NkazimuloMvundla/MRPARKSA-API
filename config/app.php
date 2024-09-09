@@ -131,6 +131,7 @@ return [
     // 'providers' => [
     //     // Other service providers...
     //     App\Providers\AuthServiceProvider::class,
+    //     Kreait\Laravel\Firebase\ServiceProvider::class,
     // ],
 
 ];

@@ -62,6 +62,7 @@ Route::post('/deleteAllUsers', [RegisteredUserAPIController::class, 'deleteAllUs
 
 
 //user-parking-routes
+// Route::post('/send-notification', [NotificationController::class, 'sendNotification']);
 Route::post('/send-notification', [NotificationController::class, 'sendNotification']);
 Route::get('/find-hourly-parking', [ParkingController::class, 'findHourlyParking'])->middleware('auth:sanctum');
 Route::get('/find-airport-parking', [ParkingController::class, 'findAirportParking'])->middleware('auth:sanctum');
