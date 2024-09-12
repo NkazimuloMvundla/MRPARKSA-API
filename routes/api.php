@@ -53,7 +53,9 @@ Route::middleware([EnsureFrontendRequestsAreStateful::class])->group(function ()
 // Route::post('/search-parking', [RegisteredUserAPIController::class, 'store'])
 // ->middleware('guest')
 // ->name('search-parking');
-
+Route::get('/test', function () {
+    return response()->json(['message' => 'API is working']);
+});
 //THIS IS FOR TESTING PERPUSES COMMENT OUT WHEN DONE
 Route::post('/deleteAllUsers', [RegisteredUserAPIController::class, 'deleteAllUsers'])
     ->middleware(['token.present', 'token.valid', 'auth:sanctum'])
