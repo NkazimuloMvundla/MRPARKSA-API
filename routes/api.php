@@ -54,8 +54,13 @@ Route::middleware([EnsureFrontendRequestsAreStateful::class])->group(function ()
 // ->middleware('guest')
 // ->name('search-parking');
 Route::get('/test', function () {
-    return response()->json(['message' => 'API is working']);
+    $firebaseCredentialsPath = env('FIREBASE_CREDENTIALS_PATH');
+    return response()->json([
+        'message' => 'API is working',
+        'firebase_credentials_path' => $firebaseCredentialsPath
+    ]);
 });
+
 //THIS IS FOR TESTING PERPUSES COMMENT OUT WHEN DONE
 Route::post('/deleteAllUsers', [RegisteredUserAPIController::class, 'deleteAllUsers'])
     ->middleware(['token.present', 'token.valid', 'auth:sanctum'])
