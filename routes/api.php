@@ -54,7 +54,7 @@ Route::middleware([EnsureFrontendRequestsAreStateful::class])->group(function ()
 // ->middleware('guest')
 // ->name('search-parking');
 Route::get('/test', function () {
-    $firebaseCredentialsPath = base_path(env('FIREBASE_CREDENTIALS'));
+    $firebaseCredentialsPath = storage_path('app/firebase/mrparksa-bf841-firebase-adminsdk-erp7l-0a5c129d75.json');
 
     // Check if the path is set and file exists
     if (file_exists($firebaseCredentialsPath)) {
