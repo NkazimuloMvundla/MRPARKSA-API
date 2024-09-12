@@ -54,12 +54,22 @@ Route::middleware([EnsureFrontendRequestsAreStateful::class])->group(function ()
 // ->middleware('guest')
 // ->name('search-parking');
 Route::get('/test', function () {
-    $firebaseCredentialsPath = env('FIREBASE_CREDENTIALS');
+    $firebaseCredentialsPath = env('FIREBASE_CREDENTIALS_PATH');
+
+    // Check if the path is set and file exists
+    if (file_exists($firebaseCredentialsPath)) {
+        $fileContents = file_get_contents($firebaseCredentialsPath);
+    } else {
+        $fileContents = 'File not found or path is incorrect.';
+    }
+
     return response()->json([
         'message' => 'API is working',
-        'firebase_credentials_path' => $firebaseCredentialsPath
+        'firebase_credentials_path' => $firebaseCredentialsPath,
+        'file_contents' => $fileContents,
     ]);
 });
+
 
 //THIS IS FOR TESTING PERPUSES COMMENT OUT WHEN DONE
 Route::post('/deleteAllUsers', [RegisteredUserAPIController::class, 'deleteAllUsers'])
