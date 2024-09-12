@@ -54,7 +54,7 @@ Route::middleware([EnsureFrontendRequestsAreStateful::class])->group(function ()
 // ->middleware('guest')
 // ->name('search-parking');
 Route::get('/test', function () {
-    $firebaseCredentialsPath = env('FIREBASE_CREDENTIALS_PATH');
+    $firebaseCredentialsPath = env('FIREBASE_CREDENTIALS');
     return response()->json([
         'message' => 'API is working',
         'firebase_credentials_path' => $firebaseCredentialsPath
