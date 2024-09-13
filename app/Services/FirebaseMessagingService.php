@@ -12,7 +12,13 @@ class FirebaseMessagingService
 
     public function __construct()
     {
-        $factory = (new Factory)->withServiceAccount(base_path(env('FIREBASE_CREDENTIALS')));
+        $firebaseCredentialsUrl = env('FIREBASE_CREDENTIALS');
+
+        // Fetch file contents from the remote URL
+        $firebaseCredentials = file_get_contents($firebaseCredentialsUrl);
+
+        $factory = (new Factory)->withServiceAccount($firebaseCredentials);
+
         $this->messaging = $factory->createMessaging();
     }
 

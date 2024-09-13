@@ -55,18 +55,18 @@ Route::middleware([EnsureFrontendRequestsAreStateful::class])->group(function ()
 // ->name('search-parking');
 Route::get('/test', function () {
    // echo asset('storage/mrparksa-bf841-firebase-adminsdk-erp7l-0a5c129d75.json');
-    $firebaseCredentialsPath = storage_path('app/firebase/mrparksa-bf841-firebase-adminsdk-erp7l-0a5c129d75.json');
-    $path = base_path(env('FIREBASE_CREDENTIALS'));
+   $firebaseCredentialsUrl = env('FIREBASE_CREDENTIALS');
+
     // Check if the path is set and file exists
-    if (file_exists($path)) {
-        $fileContents = file_get_contents($firebaseCredentialsPath);
+    if (file_exists($firebaseCredentialsUrl)) {
+        $fileContents = file_get_contents($firebaseCredentialsUrl);
     } else {
         $fileContents = 'File not found or path is incorrect.';
     }
 
     return response()->json([
         'message' => 'API is working',
-        'firebase_credentials_path' => $firebaseCredentialsPath,
+        'firebase_credentials_path' => $firebaseCredentialsUrl,
         'file_contents' => $fileContents,
     ]);
 });
