@@ -30,7 +30,7 @@ return [
         'http://localhost',
         'http://192.168.0.179',
         'http://192.168.0.179:8000',
-        'https://travelers-platforms-accommodate-missile.trycloudflare.com'
+        'https://within-characterization-printers-grad.trycloudflare.com'
     ],
 
     'allowed_origins_patterns' => [],
