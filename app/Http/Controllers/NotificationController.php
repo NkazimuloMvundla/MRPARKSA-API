@@ -47,17 +47,34 @@ class NotificationController extends Controller
     public function sendOneSignalNotification(Request $request)
     {
         try {
-            // Validate the incoming request data, including the buttons field
+            // Validate the incoming request data
             $validatedData = $request->validate([
                 'app_id' => 'required|string',
                 'contents' => 'required|array',
                 'include_subscription_ids' => 'required|array',
                 'buttons' => 'nullable|array',  // Allow buttons to be passed optionally
             ]);
+
+            // Make the POST request to OneSignal API
             $response = Http::withHeaders([
                 'Content-Type' => 'application/json',
-                'Authorization' => 'Basic ' . env('ONESIGNAL_API_KEY','NDFmNmViODktNzRmZC00MmYzLWJhYjAtY2RlZmIyOWUyMzQz'), // Use environment variable for the API key
-            ])->post('https://onesignal.com/api/v1/notifications', $validatedData);
+                'Authorization' => 'Basic ' . env('ONESIGNAL_API_KEY', 'NDFmNmViODktNzRmZC00MmYzLWJhYjAtY2RlZmIyOWUyMzQz'), // API Key from env
+            ])->post('https://onesignal.com/api/v1/notifications', [
+                'app_id' => $validatedData['app_id'],
+                'include_player_ids' => $validatedData['include_subscription_ids'],
+                'headings' => ['en' => 'Geofence Alert!'],
+                'contents' => $validatedData['contents'],
+                'small_icon' => 'ic_app_icon', // Path to your app icon
+                'large_icon' => 'https://judges.nyc3.cdn.digitaloceanspaces.com/parking.png', // URL to your app icon
+                'big_picture' => 'https://judges.nyc3.cdn.digitaloceanspaces.com/parking.png', // URL to large image
+                'buttons' => $validatedData['buttons'] ?? [
+                    [
+                        'id' => 'pay_now',
+                        'text' => 'Pay Now',
+                        'icon' => 'ic_pay', // Optional: small icon for the button
+                    ]
+                ],
+            ]);
 
             // Check if the response is successful
             if ($response->successful()) {
@@ -81,6 +98,4 @@ class NotificationController extends Controller
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
-
-
 }
