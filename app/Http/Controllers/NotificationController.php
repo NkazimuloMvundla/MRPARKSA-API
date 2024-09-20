@@ -62,7 +62,7 @@ class NotificationController extends Controller
             ])->post('https://onesignal.com/api/v1/notifications', [
                 'app_id' => $validatedData['app_id'],
                 'include_player_ids' => $validatedData['include_subscription_ids'],
-                'headings' => ['en' => 'Geofence Alert!'],
+                'headings' => ['en' => 'eThekwini Municipality Parking Alert!'],
                 'contents' => $validatedData['contents'],
                 'small_icon' => 'ic_app_icon', // Path to your app icon
                 'large_icon' => 'https://judges.nyc3.cdn.digitaloceanspaces.com/parking.png', // URL to your app icon
@@ -70,7 +70,7 @@ class NotificationController extends Controller
                 'buttons' => $validatedData['buttons'] ?? [
                     [
                         'id' => 'pay_now',
-                        'text' => 'Pay Now',
+                        'text' => 'Avoid Fine',
                         'icon' => 'ic_pay', // Optional: small icon for the button
                     ]
                 ],
