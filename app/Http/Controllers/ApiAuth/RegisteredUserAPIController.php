@@ -29,9 +29,9 @@ class RegisteredUserAPIController extends Controller
 
         try {
             $validatedData = $request->validate([
-                'name' => ['required', 'string', 'max:255'],
+                'name' => ['string', 'max:255'],
                 'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
-                'surname' => ['required', 'string', 'max:255'],
+                'surname' => ['string', 'max:255'],
                 'password' => ['required', 'confirmed', Password::defaults()],
                 'accountType' => ['required', 'string', 'max:255'],
             ]);

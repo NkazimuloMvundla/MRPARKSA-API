@@ -13,7 +13,7 @@ return new class extends Migration
     {
 
         Schema::table('reservations', function (Blueprint $table) {
-            $table->string('confirmation_number')->unique()->after('id');
+           // $table->string('confirmation_number')->unique()->after('id');
         });
     }
 
@@ -23,7 +23,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('reservations', function (Blueprint $table) {
-            $table->dropColumn('confirmation_number');
+           // $table->dropColumn('confirmation_number');
         });
     }
 };
