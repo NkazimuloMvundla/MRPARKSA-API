@@ -30,7 +30,7 @@ return [
         'http://localhost',
         'http://192.168.0.179',
         'http://192.168.0.179:8000',
-        'https://differential-mesa-removal-journalists.trycloudflare.com '
+        'https://differential-mesa-removal-journalists.trycloudflare.com'
     ],
 
     'allowed_origins_patterns' => [],
