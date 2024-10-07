@@ -23,39 +23,39 @@ class RegisteredUserAPIController extends Controller
      *
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function store(Request $request):JsonResponse
+    public function store(Request $request): JsonResponse
     {
-       //dd($request);
+        //dd($request);
 
         try {
             $validatedData = $request->validate([
-                'name' => ['string', 'max:255'],
+                'name' => ['nullable', 'string', 'max:255'],
                 'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
-                'surname' => ['string', 'max:255'],
+                'surname' => ['nullable', 'string', 'max:255'],
                 'password' => ['required', 'confirmed', Password::defaults()],
                 'accountType' => ['required', 'string', 'max:255'],
             ]);
-           // dd($validatedData);
 
+            // dd($validatedData);
             $user = User::create([
-                'name' => $validatedData['name'],
+                'name' => $validatedData['name'] ?? null,
                 'email' => $validatedData['email'],
-                'surname' => $validatedData['surname'],
+                'surname' => $validatedData['surname'] ?? null,
                 'password' => Hash::make($validatedData['password']),
                 'account_type' => $validatedData['accountType']
             ]);
+
 
             event(new Registered($user));
 
             Auth::login($user);
             return response()->json(['message' => 'User Registered successfully', 'users' => $user], 200);
-
-        }catch (ValidationException $e) {
+        } catch (ValidationException $e) {
             return response()->json([
                 'message' => $e->getMessage(), // Use the error message from the exception
             ], 422);
         } catch (\Exception $e) {
-           // dd($e);
+            // dd($e);
             Log::error('Error while registering user: ' . $e->getMessage());
             // return response()->json(['message' => 'Failed to register user'], 500);
             return response()->json(['message' => 'Failed to register', 'errors' => $e], 500);
@@ -65,7 +65,7 @@ class RegisteredUserAPIController extends Controller
     public function getUsers(Request $request): JsonResponse
     {
 
-      //  dd($request);
+        //  dd($request);
         // Fetch all users
         $allUsers = User::all();
 
@@ -74,7 +74,8 @@ class RegisteredUserAPIController extends Controller
     }
 
     public function deleteAllUsers(Request $request): JsonResponse
-    {dd($request);
+    {
+        dd($request);
         // Delete all users
         User::truncate();
 
@@ -89,4 +90,3 @@ class RegisteredUserAPIController extends Controller
         return response()->json(['message' => 'Users retrieved successfully', 'users'], 200);
     }
 }
-
