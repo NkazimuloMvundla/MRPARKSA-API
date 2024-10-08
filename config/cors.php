@@ -30,7 +30,7 @@ return [
         'http://localhost',
         'http://192.168.0.179',
         'http://192.168.0.179:8000',
-        'https://charity-subaru-desert-suit.trycloudflare.com'
+        'https://fleet-treated-american-eye.trycloudflare.com '
     ],
 
     'allowed_origins_patterns' => [],
