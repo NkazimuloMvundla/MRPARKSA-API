@@ -14,17 +14,31 @@ use App\Http\Controllers\ParkingController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\NotificationController;
 use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
+use Illuminate\Support\Facades\Http;
 
 Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
     return $request->user();
 });
 
 
-// Route::get('/users', [RegisteredUserAPIController::class, 'getUsers'])
-//                 ->middleware('guest')
-//                 ->name('getUsers');
 Route::middleware([EnsureFrontendRequestsAreStateful::class])->group(function () {
-    // dd("herte");
+
+    Route::get('/proxy-geofence', function () {
+        $tomtomApiUrl = 'https://api.tomtom.com/geofencing/1/projects/35b50a98-c58d-447c-9a53-cb85ac5b6b5e/fence';
+        $apiKey = 'ATbQlFIigRFVpRD0oyxEw5eQLm6Fweu1';
+        $adminKey = 'blSAQjOrL5dKpySLShY9kBAqJld3bD9IeM6RIQxrbXA4aFqC';
+
+        // Add query parameters
+        $queryParams = http_build_query([
+            'key' => $apiKey,
+            'adminKey' => $adminKey,
+        ]);
+
+        $response = Http::get($tomtomApiUrl . '?' . $queryParams);
+
+        return $response->json();
+    });
+
     Route::post('/register', [RegisteredUserAPIController::class, 'store'])->middleware('guest')->name('register');
     Route::post('/login', [AuthenticatedSessionController::class, 'store'])->middleware('guest')->name('login');
     Route::post('/forgot-password', [PasswordResetLinkController::class, 'store'])
