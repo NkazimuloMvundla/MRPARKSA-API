@@ -30,7 +30,7 @@ return [
         'http://localhost',
         'http://192.168.0.179',
         'http://192.168.0.179:8000',
-        'https://undertaken-summary-plaintiff-test.trycloudflare.com'
+        'https://exterior-shapes-tender-webmaster.trycloudflare.com'
     ],
 
     'allowed_origins_patterns' => [],
