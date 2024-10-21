@@ -27,28 +27,24 @@ class RegisteredUserAPIController extends Controller
     public function store(Request $request): JsonResponse
     {
         // Debug the request
-        // dd($request);
+        dd($request);
 
         try {
             // Step 1: Validate the Turnstile token
-            $turnstileToken = $request->input('turnstileToken');
-            if (!$turnstileToken) {
-                return response()->json(['message' => 'Turnstile token missing.'], 400);
-            }
+            $recaptchaToken = $request->input('recaptcha_token');
+            $secretKey = '6LcG5i8aAAAAAFw6CNyOae6kIB0xDaeQDvEpMxoq'; // Your secret key
 
-            // Step 2: Verify the Turnstile token with Cloudflare
-            $turnstileResponse = Http::asForm()->post('https://challenges.cloudflare.com/turnstile/v0/siteverify', [
-                'secret' => env('TURNSTILE_SECRET_KEY'), // Your Turnstile secret key from Cloudflare
-                'response' => $turnstileToken,
-                'remoteip' => $request->ip() // Optional: Include the user's IP address for validation
+            // Verify the reCAPTCHA response
+            $response = Http::post('https://www.google.com/recaptcha/api/siteverify', [
+                'secret' => $secretKey,
+                'response' => $recaptchaToken,
             ]);
 
-            $turnstileResult = $turnstileResponse->json();
+            $responseBody = json_decode($response->body());
 
-            if (!$turnstileResult['success']) {
-                return response()->json(['message' => 'Turnstile verification failed.'], 400);
+            if (!$responseBody->success) {
+                return response()->json(['error' => 'reCAPTCHA verification failed.'], 400);
             }
-
             // Step 3: Validate other input data
             $validatedData = $request->validate([
                 'name' => ['nullable', 'string', 'max:255'],
