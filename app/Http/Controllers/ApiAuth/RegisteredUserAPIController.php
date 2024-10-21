@@ -32,7 +32,7 @@ class RegisteredUserAPIController extends Controller
         try {
             // Step 1: Validate the Turnstile token
             $recaptchaToken = $request->input('recaptcha_token');
-            $secretKey = '6LcG5i8aAAAAAFw6CNyOae6kIB0xDaeQDvEpMxoq'; // Your secret key
+            $secretKey = '6LcG5i8aAAAAAAtduaPzo3WnqYX_rbIkFeZnt7Ae'; // Your secret key
             // Verify the reCAPTCHA response
             $response = Http::post('https://www.google.com/recaptcha/api/siteverify', [
                 'secret' => $secretKey,
