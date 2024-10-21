@@ -33,7 +33,6 @@ class RegisteredUserAPIController extends Controller
             // Step 1: Validate the Turnstile token
             $recaptchaToken = $request->input('recaptcha_token');
             $secretKey = '6LcG5i8aAAAAAFw6CNyOae6kIB0xDaeQDvEpMxoq'; // Your secret key
-
             // Verify the reCAPTCHA response
             $response = Http::post('https://www.google.com/recaptcha/api/siteverify', [
                 'secret' => $secretKey,
@@ -43,8 +42,13 @@ class RegisteredUserAPIController extends Controller
             $responseBody = json_decode($response->body());
 
             if (!$responseBody->success) {
-                return response()->json(['error' => 'reCAPTCHA verification failed.'], 400);
+                // Return the full response for debugging purposes
+                return response()->json([
+                    'error' => 'reCAPTCHA verification failed.',
+                    'details' => $responseBody // include the full response for debugging
+                ], 400);
             }
+
             // Step 3: Validate other input data
             $validatedData = $request->validate([
                 'name' => ['nullable', 'string', 'max:255'],
@@ -69,7 +73,6 @@ class RegisteredUserAPIController extends Controller
 
             // Step 6: Return success response
             return response()->json(['message' => 'User Registered successfully', 'user' => $user], 200);
-
         } catch (ValidationException $e) {
             // Handle validation errors
             return response()->json([
