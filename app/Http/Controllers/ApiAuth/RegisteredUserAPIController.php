@@ -27,7 +27,7 @@ class RegisteredUserAPIController extends Controller
     public function store(Request $request): JsonResponse
     {
         // Debug the request
-        dd($request);
+        //dd($request);
 
         try {
             // Step 1: Validate the Turnstile token
