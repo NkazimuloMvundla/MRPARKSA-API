@@ -30,7 +30,7 @@ return [
         'http://localhost',
         'http://192.168.0.179',
         'http://192.168.0.179:8000',
-        'https://magical-metallic-sail-separate.trycloudflare.com'
+        'https://tag-muscles-trembl-peripheral.trycloudflare.com'
     ],
 
     'allowed_origins_patterns' => [],
