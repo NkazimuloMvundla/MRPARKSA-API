@@ -30,7 +30,7 @@ return [
         'http://localhost',
         'http://192.168.0.179',
         'http://192.168.0.179:8000',
-        'https://tag-muscles-trembl-peripheral.trycloudflare.com'
+        'https://pin-costume-institutes-acdbentity.trycloudflare.com'
     ],
 
     'allowed_origins_patterns' => [],

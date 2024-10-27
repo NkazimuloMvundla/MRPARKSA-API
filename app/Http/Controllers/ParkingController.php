@@ -43,7 +43,7 @@ class ParkingController extends Controller
                 'amenities' => 'nullable|string',
                 'pre_approval_required' => 'boolean',
                 'cancellation_policy' => 'nullable|string',
-                'access_hours' => 'nullable',
+                'access_hours' => 'required|string',
                 'things_to_know' => 'nullable|string',
                 'how_to_redeem' => 'nullable|string',
                 'pictures' => 'nullable|array',

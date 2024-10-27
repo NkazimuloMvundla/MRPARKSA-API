@@ -27,26 +27,26 @@ class RegisteredUserAPIController extends Controller
     public function store(Request $request): JsonResponse
     {
         // Debug the request
-        //dd($request);
+         //dd($request);
 
         try {
             // Step 1: Validate the Turnstile token
-            $recaptchaToken = $request->input('recaptcha_token');
-            $secretKey = '6LcG5i8aAAAAAAtduaPzo3WnqYX_rbIkFeZnt7Ae'; // Your secret key
-            // Verify the reCAPTCHA response
-            $response = Http::post('https://www.google.com/recaptcha/api/siteverify', [
-                'secret' => $secretKey,
-                'response' => $recaptchaToken,
+            $turnstileToken = $request->input('turnstileToken');
+            if (!$turnstileToken) {
+                return response()->json(['message' => 'Turnstile token missing.'], 400);
+            }
+
+            // Step 2: Verify the Turnstile token with Cloudflare
+            $turnstileResponse = Http::asForm()->post('https://challenges.cloudflare.com/turnstile/v0/siteverify', [
+                'secret' => '0x4AAAAAAAx7AYgVblMQhUA_ZTXmay3G0t0', // Your Turnstile secret key from Cloudflare
+                'response' => $turnstileToken,
+                'remoteip' => $request->ip() // Optional: Include the user's IP address for validation
             ]);
 
-            $responseBody = json_decode($response->body());
-
-            if (!$responseBody->success) {
-                // Return the full response for debugging purposes
-                return response()->json([
-                    'error' => 'reCAPTCHA verification failed.',
-                    'details' => $responseBody // include the full response for debugging
-                ], 400);
+            $turnstileResult = $turnstileResponse->json();
+            //dd($turnstileResult);
+            if (!$turnstileResult['success']) {
+                return response()->json(['message' => 'Turnstile verification failed.'], 400);
             }
 
             // Step 3: Validate other input data
@@ -73,6 +73,7 @@ class RegisteredUserAPIController extends Controller
 
             // Step 6: Return success response
             return response()->json(['message' => 'User Registered successfully', 'user' => $user], 200);
+
         } catch (ValidationException $e) {
             // Handle validation errors
             return response()->json([
