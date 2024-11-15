@@ -43,7 +43,7 @@ class ParkingController extends Controller
                 'amenities' => 'nullable|string',
                 'pre_approval_required' => 'boolean',
                 'cancellation_policy' => 'nullable|string',
-                'access_hours' => 'required|string',
+                'access_hours' => 'required|string|max:500',
                 'things_to_know' => 'nullable|string',
                 'how_to_redeem' => 'nullable|string',
                 'pictures' => 'nullable|array',
@@ -53,6 +53,8 @@ class ParkingController extends Controller
             // dd($request);
             // Determine if updating or creating
             if ($request->has('id') && $request->id) {
+                // Limit access_hours to 500 characters before encoding
+                $accessHours = substr(json_encode($validated['access_hours'] ?? []), 0, 500);
                 // Updating existing parking space
                 $parkingSpace = ParkingSpace::findOrFail($request->id);
                 $parkingSpace->update([
@@ -65,7 +67,7 @@ class ParkingController extends Controller
                     'amenities' => $validated['amenities'] ?? '',
                     'pre_approval_required' => $validated['pre_approval_required'] ?? false,
                     'cancellation_policy' => $validated['cancellation_policy'] ?? '',
-                    'access_hours' => json_encode($validated['access_hours'] ?? []),
+                    'access_hours' => $accessHours,  // Use the truncated access_hours value
                     'things_to_know' => $validated['things_to_know'] ?? '',
                     'how_to_redeem' => $validated['how_to_redeem'] ?? '',
                     'close_by_airport' => $validated['close_by_airport'],
@@ -74,6 +76,7 @@ class ParkingController extends Controller
                 // Remove existing images and replace with new ones
                 $parkingSpace->pictures()->delete();
             } else {
+                $accessHours = substr(json_encode($validated['access_hours'] ?? []), 0, 500);
                 // Creating new parking space
                 $parkingSpace = ParkingSpace::create([
                     'user_id' => Auth::id(),
@@ -86,7 +89,7 @@ class ParkingController extends Controller
                     'amenities' => $validated['amenities'] ?? '',
                     'pre_approval_required' => $validated['pre_approval_required'] ?? false,
                     'cancellation_policy' => $validated['cancellation_policy'] ?? '',
-                    'access_hours' => json_encode($validated['access_hours'] ?? []),
+                    'access_hours' => $accessHours,  // Use the truncated access_hours value
                     'things_to_know' => $validated['things_to_know'] ?? '',
                     'how_to_redeem' => $validated['how_to_redeem'] ?? '',
                     'close_by_airport' => $validated['close_by_airport'],
@@ -282,6 +285,7 @@ class ParkingController extends Controller
                             ->where('end_time', '>', $start_time);
                     });
                 })
+                ->where('availability', 1) // Only select available parking spaces
                 ->get();
 
             // Modify the price based on the duration and update the existing price in the array
@@ -427,9 +431,10 @@ class ParkingController extends Controller
                 ->whereDoesntHave('reservations', function ($query) use ($start_time, $end_time) {
                     $query->where(function ($query) use ($start_time, $end_time) {
                         $query->where('start_time', '<', $end_time)
-                              ->where('end_time', '>', $start_time);
+                            ->where('end_time', '>', $start_time);
                     });
                 })
+                ->where('availability', 1) // Only select available parking spaces
                 ->get();
 
             // Modify the price based on the duration and update the existing price in the array
@@ -442,7 +447,6 @@ class ParkingController extends Controller
 
             // Return the result as JSON response
             return response()->json($nearbyParkingSpaces);
-
         } catch (ValidationException $e) {
             // Return validation error response
             return response()->json(['message' => 'Validation failed', 'errors' => $e->errors()], 422);
@@ -452,7 +456,23 @@ class ParkingController extends Controller
         }
     }
 
+    public function toggleAvailability($id)
+    {
+        $parkingSpace = ParkingSpace::find($id);
 
+        if (!$parkingSpace) {
+            return response()->json(['error' => 'Parking space not found'], 404);
+        }
+
+        // Toggle the availability
+        $parkingSpace->availability = !$parkingSpace->availability;
+        $parkingSpace->save();
+
+        return response()->json([
+            'message' => 'Availability updated successfully',
+            'parking_space' => $parkingSpace,
+        ]);
+    }
 
 
     public function checkAvailability(Request $request)
@@ -521,7 +541,7 @@ class ParkingController extends Controller
 
 
 
-    public function getParkingSpace($id,Request $request)
+    public function getParkingSpace($id, Request $request)
     {
         //dd($id);
         // Validate the incoming request
@@ -530,7 +550,7 @@ class ParkingController extends Controller
             'end_time' => 'required|date|after:start_time',
             'type' => 'required|string|in:Hourly,Airport',
         ]);
-       //dd($request);
+        //dd($request);
         $start_time = Carbon::parse($validated['start_time']);
         $end_time = Carbon::parse($validated['end_time']);
         $type = $validated['type'];
@@ -555,7 +575,10 @@ class ParkingController extends Controller
         if (!$parkingSpace) {
             return response()->json(['message' => 'Parking space not found'], 404);
         }
-
+        // Check if the parking space is available
+        if (!$parkingSpace->available) {
+            return response()->json(['message' => 'This parking space is not available'], 422);
+        }
         // Load related data
         $parkingSpace = ParkingSpace::with([
             'types',
@@ -567,7 +590,7 @@ class ParkingController extends Controller
                 $query->where('parking_type_id', $parkingTypeId);
             },
         ])->findOrFail($id);
-          //dd($parkingSpace);
+        //dd($parkingSpace);
         // Modify the price based on the duration and type
         $priceRecord = $parkingSpace->prices->first(); // Get the first price record related to the parking type
         if ($priceRecord) {

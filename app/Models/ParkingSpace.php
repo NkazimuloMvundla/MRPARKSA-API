@@ -14,8 +14,9 @@ class ParkingSpace extends Model
     protected $fillable = [
         'user_id', 'type', 'close_by_airport', 'latitude', 'longitude', 'address', 'description',
         'capacity', 'contact_info', 'amenities', 'rating', 'pre_approval_required',
-        'cancellation_policy', 'access_hours', 'things_to_know', 'how_to_redeem'
+        'cancellation_policy', 'access_hours', 'things_to_know', 'how_to_redeem', 'availability'
     ];
+
 
     protected $casts = [
         'amenities' => 'array',

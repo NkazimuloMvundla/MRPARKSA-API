@@ -102,6 +102,7 @@ Route::get('/parking-space/{id}', [ParkingController::class, 'getParkingSpace'])
 Route::get('/parking-types', [ParkingController::class, 'listParkingTypes'])->middleware('auth:sanctum');
 Route::get('/check-availability', [ParkingController::class, 'checkAvailability']);
 Route::post('/make-reservation', [ReservationController::class, 'makeReservation'])->middleware('auth:sanctum');
+Route::patch('/parking-spaces/{id}/toggle-availability', [ParkingController::class, 'toggleAvailability']);
 //reservation
 // Route::get('/user-reservations', [ReservationController::class, 'listUserReservations'])->middleware('auth:sanctum');
 // Route::delete('/cancel-reservation/{id}', [ReservationController::class, 'cancelReservation'])->middleware('auth:sanctum');
