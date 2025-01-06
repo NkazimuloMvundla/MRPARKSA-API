@@ -31,14 +31,19 @@ class ReservationController extends Controller
     public function listOwnerReservations()
     {
         $userId = Auth::id();
+
+        // Fetch IDs of parking spaces owned by the user
         $ownerParkingSpaces = ParkingSpace::where('user_id', $userId)->pluck('id');
 
+        // Retrieve reservations linked to these parking spaces
         $reservations = Reservation::whereIn('parking_space_id', $ownerParkingSpaces)
             ->with(['user', 'parkingType'])
+            ->orderBy('created_at', 'desc')  // Order by creation date, descending
             ->get();
 
         return response()->json($reservations);
     }
+
     // Cancel a reservation
     public function cancelReservation($id)
     {

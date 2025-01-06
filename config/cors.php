@@ -30,7 +30,8 @@ return [
         'http://localhost',
         'http://192.168.0.179',
         'http://192.168.0.179:8000',
-        'https://acoustic-fault-lt-dentists.trycloudflare.com'
+        'https://define-iraqi-condos-right.trycloudflare.com',
+        'http://127.0.0.1:8000/api/'
     ],
 
     'allowed_origins_patterns' => [],

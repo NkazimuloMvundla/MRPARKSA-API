@@ -22,7 +22,11 @@ use App\Models\User;
 use Illuminate\Support\Facades\Gate;
 use App\Http\helpers\Helper;
 use Carbon\Carbon;
-
+use Intervention\Image\ImageManager;
+use Intervention\Image\Drivers\Gd\Driver;
+use Intervention\Image\Encoders\AutoEncoder;
+use Intervention\Image\Encoders\WebpEncoder;
+use Intervention\Image\Encoders\GifEncoder;
 class ParkingController extends Controller
 {
     public function createParkingSpace(Request $request)
@@ -47,11 +51,10 @@ class ParkingController extends Controller
                 'things_to_know' => 'nullable|string',
                 'how_to_redeem' => 'nullable|string',
                 'pictures' => 'nullable|array',
-                'pictures.*.image_base64' => 'nullable|string',
+                'pictures.*.image_base64' => 'nullable|string|max:500000',
                 'close_by_airport' => 'nullable|string' // Add this line
             ]);
-            // dd($request);
-            // Determine if updating or creating
+            $operationType = $request->has('id') ? 'Update' : 'Create';
             if ($request->has('id') && $request->id) {
                 // Limit access_hours to 500 characters before encoding
                 $accessHours = substr(json_encode($validated['access_hours'] ?? []), 0, 500);
@@ -128,28 +131,40 @@ class ParkingController extends Controller
                     return response()->json(['error' => 'You can upload a maximum of 5 images'], 422);
                 }
 
-                foreach ($validated['pictures'] as $imageBase64) {
-                    foreach ($imageBase64 as $base64) {
-                        // dd($base64);
-                        // Perform any additional validation if necessary
+                foreach ($validated['pictures'] as $image) {
+                    foreach ($image as $base64) {
                         if (!is_string($base64)) {
                             return response()->json(['error' => 'Invalid image format'], 422);
-                        } else {
-                            ParkingSpacePicture::create([
-                                'parking_space_id' => $parkingSpace->id,
-                                'image_base64' => $base64,
-                            ]);
                         }
+
+                        // Decode Base64 to get raw image data
+                        $decodedImage = base64_decode($base64);
+
+                        $imageInstance = ImageManager::imagick()->read($decodedImage);
+
+                        // Resize the image (resize width to 800px and height to 600px while maintaining aspect ratio)
+                        $imageInstance->resize(800, 600, function ($constraint) {
+                            $constraint->aspectRatio(); // Maintain aspect ratio
+                            $constraint->upsize(); // Prevent upsizing
+                        });
+
+                        $encodedImage = $image->encode(new AutoEncoder(quality: 75)); // Automatically determines the format and applies the quality
+
+
+                        // Encode the image back to Base64
+                        $compressedBase64 = 'data:image/jpeg;base64,' . base64_encode($encodedImage);
+
+                        // Save the compressed Base64 string to the database
+                        ParkingSpacePicture::create([
+                            'parking_space_id' => $parkingSpace->id,
+                            'image_base64' => $compressedBase64,
+                        ]);
                     }
-                    // ParkingSpacePicture::create([
-                    //     'parking_space_id' => $parkingSpace->id,
-                    //     'image_base64' => $imageBase64,
-                    // ]);
                 }
                 Helper::recordAuditLog(
-                    'Create|Update',
+                    $operationType,
                     'parkingSpace',
-                    $request->id,
+                    $parkingSpace->id, // Use the newly created ID
                     null,
                     ['admin_user_id' => Auth::id()]
                 );
@@ -287,7 +302,7 @@ class ParkingController extends Controller
                 })
                 ->where('availability', 1) // Only select available parking spaces
                 ->get();
-
+               // dd($nearbyParkingSpaces);
             // Modify the price based on the duration and update the existing price in the array
             $nearbyParkingSpaces->each(function ($space) use ($durationHours) {
                 $priceRecord = $space->prices->first(); // Get the first price record related to the parking type
@@ -576,7 +591,7 @@ class ParkingController extends Controller
             return response()->json(['message' => 'Parking space not found'], 404);
         }
         // Check if the parking space is available
-        if (!$parkingSpace->available) {
+        if (!$parkingSpace->availability) {
             return response()->json(['message' => 'This parking space is not available'], 422);
         }
         // Load related data
