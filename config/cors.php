@@ -27,6 +27,7 @@ return [
 
     'allowed_origins' => [
         env('FRONTEND_URL', 'http://localhost:8100'),
+        'http://localhost:8100',
         'http://localhost',
         'http://192.168.0.179',
         'http://192.168.0.179:8000',
