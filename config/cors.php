@@ -31,7 +31,7 @@ return [
         'http://localhost',
         'http://192.168.0.179',
         'http://192.168.0.179:8000',
-        'https://sl-rebecca-gage-guards.trycloudflare.com'
+        'https://golf-jewelry-indexed-london.trycloudflare.com'
     ],
 
     'allowed_origins_patterns' => [],
