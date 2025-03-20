@@ -31,7 +31,7 @@ return [
         'http://localhost',
         'http://192.168.0.179',
         'http://192.168.0.179:8000',
-        'https://laboratory-greatest-upper-coding.trycloudflare.com'
+        'https://sql-organisation-henderson-cooperation.trycloudflare.com'
     ],
 
     'allowed_origins_patterns' => [],
