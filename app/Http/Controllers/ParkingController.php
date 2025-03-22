@@ -31,7 +31,7 @@ class ParkingController extends Controller
 {
     public function createParkingSpace(Request $request)
     {
-
+       // dd($request);
 
         try {
             // Validate the request
@@ -138,6 +138,9 @@ class ParkingController extends Controller
                         }
 
                         // Decode Base64 to get raw image data
+                        //dd($base64);
+                        //return $base64;
+                        $base64 = preg_replace('#^data:image/\w+;base64,#i', '', $base64);
                         $decodedImage = base64_decode($base64);
 
                         $imageInstance = ImageManager::imagick()->read($decodedImage);
@@ -148,7 +151,7 @@ class ParkingController extends Controller
                             $constraint->upsize(); // Prevent upsizing
                         });
 
-                        $encodedImage = $image->encode(new AutoEncoder(quality: 75)); // Automatically determines the format and applies the quality
+                        $encodedImage = $imageInstance->encode(new AutoEncoder(quality: 75)); // Automatically determines the format and applies the quality
 
 
                         // Encode the image back to Base64
